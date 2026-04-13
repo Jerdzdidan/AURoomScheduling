@@ -1,0 +1,178 @@
+/* ─── Homepage Announcements ─── */
+
+/* Announcement Card */
+.announcement-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.announcement-card:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.announcement-card .card-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.announcement-card .announcement-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #566a7f;
+}
+
+.announcement-card .announcement-body {
+    font-size: 0.9rem;
+    color: #697a8d;
+    line-height: 1.65;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.announcement-card .announcement-body p:last-child {
+    margin-bottom: 0;
+}
+
+.announcement-card .announcement-meta {
+    font-size: 0.78rem;
+    color: #a1acb8;
+}
+
+.announcement-card .announcement-meta i {
+    font-size: 0.78rem;
+    width: auto;
+    height: auto;
+}
+
+/* Pinned badge */
+.pin-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Sidebar Cards */
+.home-sidebar .card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.home-sidebar .user-info-card .user-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.home-sidebar .user-info-card .user-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #566a7f;
+    margin-bottom: 0.15rem;
+}
+
+.home-sidebar .user-info-card .user-type-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+}
+
+.home-sidebar .user-info-card .user-email {
+    font-size: 0.8rem;
+    color: #a1acb8;
+}
+
+.home-sidebar .quick-links-card .list-group-item {
+    border: none;
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
+    color: #566a7f;
+    transition: background-color 0.15s ease, padding-left 0.15s ease;
+    border-radius: 6px;
+}
+
+.home-sidebar .quick-links-card .list-group-item:hover {
+    background-color: #f5f5f9;
+    padding-left: 1.25rem;
+    color: #1855a9;
+}
+
+.home-sidebar .quick-links-card .list-group-item i {
+    width: 1.2em;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+/* Empty State */
+.empty-announcements {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-announcements i {
+    font-size: 3rem;
+    color: #d4d8dd;
+    margin-bottom: 1rem;
+    display: block;
+    width: auto;
+    height: auto;
+}
+
+.empty-announcements h5 {
+    color: #697a8d;
+    font-weight: 600;
+}
+
+.empty-announcements p {
+    color: #a1acb8;
+    font-size: 0.9rem;
+}
+
+/* Compose Button */
+.btn-compose {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1.2rem;
+}
+
+/* Admin action buttons on cards */
+.announcement-actions .btn {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.78rem;
+    border-radius: 5px;
+    line-height: 1;
+}
+
+.announcement-actions .btn i {
+    font-size: 0.78rem;
+    width: auto;
+    height: auto;
+}
+
+/* Section title */
+.home-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #566a7f;
+    margin-bottom: 1rem;
+}
+
+/* Pagination links */
+.home-pagination .page-link {
+    border-radius: 6px;
+    margin: 0 2px;
+    font-size: 0.85rem;
+    color: #696cff;
+    border-color: #e7e7e8;
+}
+
+.home-pagination .page-item.active .page-link {
+    background-color: #696cff;
+    border-color: #696cff;
+}

@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#nprogress .bar {
+    z-index: 99999 !important;
+}
+
+#nprogress .spinner {
+    z-index: 99999 !important;
+}

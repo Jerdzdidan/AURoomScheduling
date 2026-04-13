@@ -1,0 +1,49 @@
+/* HAND GIF */
+#hand_gif {
+    width: calc(30px + 2vw);
+    max-width: 40px;
+    height: auto;
+}
+
+#logo_img {
+    width: calc(80px + 2vw);
+    max-width: 160px;
+    height: auto;
+}
+
+body {
+    background-color: #1853a1ad;
+}
+
+/* CAROUSEL */
+#backgroundCarousel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+#backgroundCarousel .carousel-inner,
+#backgroundCarousel .carousel-item,
+#backgroundCarousel .bg-slide {
+    height: 100%;
+}
+
+.bg-slide {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    width: 100%;
+    height: 100%;
+}
+
+.bg-slide .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #1853a173;
+}
