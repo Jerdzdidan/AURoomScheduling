@@ -18,7 +18,7 @@ export default function Base({ title, children }) {
 
                     <div className="content-wrapper">
                         <div className="container-fluid flex-grow-1 container-p-y mb-0">
-                            <div className="container-fluid">
+                            <div className="container-fluid ps-0 pe-0">
                                 { children }
                             </div>
                         </div>

@@ -1,7 +1,10 @@
 import { usePage } from '@inertiajs/react';
 import SidebarItem from "@/Components/Sidebar/SidebarItem";
 import Bar from "@/Components/Sidebar/Bar";
-import { BiHome, BiSolidUser } from "react-icons/bi";
+import {
+    LuUserRoundCog, LuIdCard, LuCalendarRange, LuHouse, LuBookText,
+    LuSchool, LuUniversity, LuDoorOpen, LuGraduationCap
+} from "react-icons/lu";
 
 function Admin() {
     // const adminLinks = [
@@ -23,13 +26,68 @@ function Admin() {
 
             <SidebarItem
                 routeName="admin.index"
-                Icon={BiHome}
+                Icon={LuHouse}
                 name="Home"
             />
+
+            <li className="menu-header small text-uppercase">
+                <span className="menu-header-text">Core</span>
+            </li>
+
             <SidebarItem
-                routeName="admin.users.index"
-                Icon={BiSolidUser}
-                name="User Management"
+                routeName="_"
+                Icon={LuCalendarRange}
+                name="Room Schedule"
+            />
+
+            <SidebarItem
+                routeName="_"
+                Icon={LuBookText}
+                name="Subjects"
+            />
+
+            <li className="menu-header small text-uppercase">
+                <span className="menu-header-text">User Management</span>
+            </li>
+
+            <SidebarItem
+                routeName="_"
+                Icon={LuIdCard}
+                name="Officer"
+            />
+
+            <SidebarItem
+                routeName="admin.users.admin-accounts.index"
+                Icon={LuUserRoundCog}
+                name="Admin"
+            />
+
+            <li className="menu-header small text-uppercase">
+                <span className="menu-header-text">Utilities</span>
+            </li>
+
+            <SidebarItem
+                routeName="_"
+                Icon={LuSchool}
+                name="Academic Period"
+            />
+
+            <SidebarItem
+                routeName="_"
+                Icon={LuUniversity}
+                name="Branch"
+            />
+
+            <SidebarItem
+                routeName="_"
+                Icon={LuDoorOpen}
+                name="Departments"
+            />
+
+            <SidebarItem
+                routeName="_"
+                Icon={LuGraduationCap}
+                name="Programs"
             />
         </Bar>
     );

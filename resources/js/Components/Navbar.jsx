@@ -14,7 +14,23 @@ export default function Navbar({ title }) {
             <div className="navbar-nav-right d-flex align-items-center justify-content-end" id="navbar-collapse">
                 {/* Title */}
                     <div className="nav-item d-flex align-items-center me-auto">
-                        <h4 className="mb-0" style={{ fontSize: 'calc(.5rem + 1vw)' }}>{title}</h4>
+                        {typeof title === 'string' && title.includes('>') ? (
+                            <div className="d-flex align-items-center gap-2" style={{ fontSize: '0.95rem' }}>
+                                {title.split('>').map((part, index, arr) => {
+                                    const isLast = index === arr.length - 1;
+                                    return (
+                                        <div key={index} className="d-flex align-items-center gap-2">
+                                            <span className={isLast ? "text-body fw-medium" : "text-secondary"}>
+                                                {part.trim()}
+                                            </span>
+                                            {!isLast && <i className="icon-base bx bx-chevron-right text-secondary"></i>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <h5 className="mb-0 fw-medium text-body" style={{ fontSize: '1.1rem' }}>{title}</h5>
+                        )}
                     </div>
                 {/* /Title */}
 
