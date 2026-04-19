@@ -51,7 +51,7 @@ function Admin() {
             </li>
 
             <SidebarItem
-                routeName="_"
+                routeName="admin.users.officer-accounts.index"
                 Icon={LuIdCard}
                 name="Officer"
             />
@@ -67,25 +67,25 @@ function Admin() {
             </li>
 
             <SidebarItem
-                routeName="_"
+                routeName="admin.utilities.academic-periods.index"
                 Icon={LuSchool}
                 name="Academic Period"
             />
 
             <SidebarItem
-                routeName="_"
+                routeName="admin.utilities.branches.index"
                 Icon={LuUniversity}
                 name="Branch"
             />
 
             <SidebarItem
-                routeName="_"
+                routeName="admin.utilities.departments.index"
                 Icon={LuDoorOpen}
                 name="Departments"
             />
 
             <SidebarItem
-                routeName="_"
+                routeName="admin.utilities.programs.index"
                 Icon={LuGraduationCap}
                 name="Programs"
             />

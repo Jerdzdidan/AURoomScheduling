@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\Utilities\AcademicPeriodController;
+use App\Http\Controllers\Admin\Utilities\BranchController;
+use App\Http\Controllers\Admin\Utilities\DepartmentController;
+use App\Http\Controllers\Admin\Utilities\ProgramController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\UserManagement\AdminController;
+use App\Http\Controllers\Admin\UserManagement\OfficerController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\PreventSelfAction;
@@ -59,11 +64,66 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
         // ADMIN ACCOUNTS ROUTES
         Route::prefix('admin-accounts')->name('admin-accounts.')->group(function () {
             Route::get('/', [AdminController::class, 'index'])->name('index');
+            Route::post('store', [AdminController::class, 'store'])->name('store');
+            Route::get('{id}', [AdminController::class, 'show'])->name('show');
+            Route::put('{id}', [AdminController::class, 'update'])->name('update');
+        });
+
+        // OFFICER ACCOUNTS ROUTES
+        Route::prefix('officer-accounts')->name('officer-accounts.')->group(function () {
+            Route::get('/', [OfficerController::class, 'index'])->name('index');
+            Route::post('store', [OfficerController::class, 'store'])->name('store');
+            Route::get('{id}', [OfficerController::class, 'show'])->name('show');
+            Route::put('{id}', [OfficerController::class, 'update'])->name('update');
         });
 
         // GENERIC USER ROUTES
-        Route::get('data/{user_type}', [UserController::class, 'getData'])->name('users.data');
-        Route::get('stats/{user_type}', [UserController::class, 'getStats'])->name('users.stats');
-        Route::post('toggle-status/{id}', [UserController::class, 'toggle'])->middleware(PreventSelfAction::class)->name('users.toggle');
+        Route::get('data/{user_type}', [UserController::class, 'getData'])->name('data');
+        Route::get('stats/{user_type}', [UserController::class, 'getStats'])->name('stats');
+        Route::post('toggle-status/{id}', [UserController::class, 'toggle'])->middleware(PreventSelfAction::class)->name('toggle');
+        Route::delete('delete/{id}', [UserController::class, 'destroy'])->middleware(PreventSelfAction::class)->name('delete');
+    });
+
+    Route::prefix('utilities')->name('utilities.')->group(function () {
+        Route::prefix('academic-periods')->name('academic-periods.')->group(function () {
+            Route::get('/', [AcademicPeriodController::class, 'index'])->name('index');
+            Route::get('data', [AcademicPeriodController::class, 'getData'])->name('data');
+            Route::get('stats', [AcademicPeriodController::class, 'getStats'])->name('stats');
+            Route::post('store', [AcademicPeriodController::class, 'store'])->name('store');
+            Route::post('set-current/{id}', [AcademicPeriodController::class, 'setCurrent'])->name('set-current');
+            Route::get('{id}', [AcademicPeriodController::class, 'show'])->name('show');
+            Route::put('{id}', [AcademicPeriodController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [AcademicPeriodController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('branches')->name('branches.')->group(function () {
+            Route::get('/', [BranchController::class, 'index'])->name('index');
+            Route::get('data', [BranchController::class, 'getData'])->name('data');
+            Route::get('stats', [BranchController::class, 'getStats'])->name('stats');
+            Route::post('store', [BranchController::class, 'store'])->name('store');
+            Route::get('{id}', [BranchController::class, 'show'])->name('show');
+            Route::put('{id}', [BranchController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [BranchController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('departments')->name('departments.')->group(function () {
+            Route::get('/', [DepartmentController::class, 'index'])->name('index');
+            Route::get('data', [DepartmentController::class, 'getData'])->name('data');
+            Route::get('stats', [DepartmentController::class, 'getStats'])->name('stats');
+            Route::post('store', [DepartmentController::class, 'store'])->name('store');
+            Route::get('{id}', [DepartmentController::class, 'show'])->name('show');
+            Route::put('{id}', [DepartmentController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [DepartmentController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('programs')->name('programs.')->group(function () {
+            Route::get('/', [ProgramController::class, 'index'])->name('index');
+            Route::get('data', [ProgramController::class, 'getData'])->name('data');
+            Route::get('stats', [ProgramController::class, 'getStats'])->name('stats');
+            Route::post('store', [ProgramController::class, 'store'])->name('store');
+            Route::get('{id}', [ProgramController::class, 'show'])->name('show');
+            Route::put('{id}', [ProgramController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [ProgramController::class, 'destroy'])->name('delete');
+        });
     });
 });

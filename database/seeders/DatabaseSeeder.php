@@ -24,5 +24,15 @@ class DatabaseSeeder extends Seeder
             'user_type' => 'ADMIN',
             'status' => true,
         ]);
+
+        User::factory()->create([
+            'name' => 'jerdan',
+            'email' => 'jdonzdayao@gmail.com',
+            'password' => '123456',
+            'user_type' => 'ADMIN',
+            'status' => true,
+        ]);
+
+        User::factory(30)->create();
     }
 }

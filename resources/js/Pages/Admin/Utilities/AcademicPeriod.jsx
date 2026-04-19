@@ -1,33 +1,42 @@
-import { usePage, Head } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
-import { LuUsersRound, LuUserRoundCheck, LuUserRoundX } from "react-icons/lu";
-import { BiToggleLeft, BiSolidToggleRight, BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
-import CreateAndEditOfficer from "./Forms/CreateAndEditOfficer";
+import CreateAndEditAcademicPeriod from "./Forms/CreateAndEditAcademicPeriod";
+import { LuCalendarDays, LuSchool } from "react-icons/lu";
+import { BiSolidEdit, BiSolidStar, BiStar, BiSolidTrash } from "react-icons/bi";
 
-export default function Officer() {
-    const { departments = [] } = usePage().props;
+const semesterLabels = {
+    '1ST': '1st Semester',
+    '2ND': '2nd Semester',
+    'SUMMER': 'Summer',
+};
+
+const getSemesterLabel = (semester) => semesterLabels[semester] ?? semester;
+
+const getAcademicPeriodLabel = (row) => `A.Y. ${row.academic_year} - ${getSemesterLabel(row.semester)}`;
+
+export default function AcademicPeriod() {
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
-        $.get(route('admin.users.stats', 'OFFICER')).done((stats) => {
+        $.get(route('admin.utilities.academic-periods.stats')).done((stats) => {
             $('#total').text(stats.total);
-            $('#active').text(stats.active);
-            $('#inactive').text(stats.inactive);
+            $('#current').text(stats.current ?? 'None');
         });
     };
 
     useEffect(() => {
         loadStats();
+
         const heading = document.createElement("h5");
         heading.classList.add("card-title", "mb-0", "text-md-start", "text-center", "pb-md-0", "pb-6");
-        heading.innerHTML = "Officer Accounts";
+        heading.innerHTML = "Academic Periods";
 
-        const table = window.$('#officer-table').DataTable({
+        const table = window.$('#academic-period-table').DataTable({
             processing: true,
             serverSide: true,
             responsive: true,
@@ -58,22 +67,7 @@ export default function Officer() {
                                 text: '<span class="d-flex align-items-center"><i class="icon-base bx bx-file me-1"></i>Csv</span>',
                                 className: "dropdown-item",
                                 exportOptions: {
-                                    columns: [1, 2, 3, 4],
-                                    format: {
-                                        body: function (e, t, a) {
-                                            if (e.length <= 0)
-                                                return e;
-                                            e = (new DOMParser).parseFromString(e, "text/html");
-                                            let s = "";
-                                            var n = e.querySelectorAll(".user-name");
-                                            return 0 < n.length ? n.forEach(e => {
-                                                e = e.querySelector(".fw-medium")?.textContent || e.querySelector(".d-block")?.textContent || e.textContent;
-                                                s += e.trim() + " "
-                                            }
-                                            ) : s = e.body.textContent || e.body.innerText,
-                                                s.trim()
-                                        }
-                                    }
+                                    columns: [1, 2, 3],
                                 }
                             }]
                         }, {
@@ -81,7 +75,7 @@ export default function Officer() {
                             className: "create-new btn btn-primary",
                             action: function () {
                                 setEditId(null);
-                                $('#officerOffcanvas').offcanvas('show');
+                                $('#academicPeriodOffcanvas').offcanvas('show');
                             }
                         }]
                     }]
@@ -108,49 +102,54 @@ export default function Officer() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.users.data', 'OFFICER'),
+            ajax: route('admin.utilities.academic-periods.data'),
             columns: [
                 { data: "id", visible: false },
-                { data: "name", width: "22%" },
-                { data: "email", width: "26%" },
                 {
-                    data: "department_name",
-                    width: "20%",
-                    render: (data) => data && data !== '-'
-                        ? `<span class="badge bg-label-primary">${data}</span>`
-                        : '<span class="text-muted">Unassigned</span>',
+                    data: "academic_year",
+                    width: "26%",
+                    render: (data) => `A.Y. ${data}`,
                 },
                 {
-                    data: "status",
-                    width: "12%",
-                    render: (data, type, row) => {
-                        const status = row.status ? 'Active' : 'Inactive';
-                        const badge = row.status ? 'success' : 'danger';
-                        return `<span class="badge bg-label-${badge}">${status}</span>`;
+                    data: "semester",
+                    width: "24%",
+                    render: (data) => getSemesterLabel(data),
+                },
+                {
+                    data: "is_current",
+                    width: "18%",
+                    render: (data) => {
+                        const badge = data ? 'success' : 'secondary';
+                        const label = data ? 'Current' : 'Not Current';
+
+                        return `<span class="badge bg-label-${badge}">${label}</span>`;
                     }
                 },
                 {
                     data: null,
                     orderable: false,
-                    width: "20%",
+                    width: "32%",
                     render: (data, type, row) => {
-                        const toggleIcon = row.status
-                            ? renderToString(<BiSolidToggleRight size={16} />)
-                            : renderToString(<BiToggleLeft size={16} />);
-
+                        const setCurrentIcon = row.is_current
+                            ? renderToString(<BiSolidStar size={16} />)
+                            : renderToString(<BiStar size={16} />);
                         const editIcon = renderToString(<BiSolidEdit size={16} />);
                         const deleteIcon = renderToString(<BiSolidTrash size={16} />);
+                        const currentButtonClass = row.is_current ? 'btn-outline-secondary disabled' : 'btn-outline-primary';
+                        const currentButtonAction = row.is_current
+                            ? ''
+                            : `onclick="academicPeriodCRUD.setCurrent('${row.id}', '${getAcademicPeriodLabel(row)}')"`;
 
                         return `
-                            <button class="btn btn-sm btn-outline-primary" title="Toggle user status" onclick="officerCRUD.toggleStatus('${row.id}', '${row.name}')">
-                                ${toggleIcon}
+                            <button class="btn btn-sm ${currentButtonClass}" title="${row.is_current ? 'Already current' : 'Set as current academic period'}" ${row.is_current ? 'disabled' : ''} ${currentButtonAction}>
+                                ${setCurrentIcon}
                             </button>
 
-                            <button class="btn btn-sm btn-outline-warning mx-1" title="Edit user: ${row.name}" onclick="officerCRUD.edit('${row.id}')">
+                            <button class="btn btn-sm btn-outline-warning mx-1" title="Edit ${getAcademicPeriodLabel(row)}" onclick="academicPeriodCRUD.edit('${row.id}')">
                                 ${editIcon}
                             </button>
 
-                            <button class="btn btn-sm btn-outline-danger" title="Delete user: ${row.name}" onclick="officerCRUD.delete('${row.id}', '${row.name}')">
+                            <button class="btn btn-sm btn-outline-danger" title="Delete ${getAcademicPeriodLabel(row)}" onclick="academicPeriodCRUD.delete('${row.id}', '${getAcademicPeriodLabel(row)}')">
                                 ${deleteIcon}
                             </button>
                         `;
@@ -160,22 +159,20 @@ export default function Officer() {
         });
 
         tableRef.current = table;
+        window.academicPeriodCRUD = window.academicPeriodCRUD || {};
 
-        // Expose CRUD handlers globally for DataTable action buttons
-        window.officerCRUD = window.officerCRUD || {};
-
-        window.officerCRUD.edit = (id) => {
+        window.academicPeriodCRUD.edit = (id) => {
             setEditId(id);
-            $('#officerOffcanvas').offcanvas('show');
+            $('#academicPeriodOffcanvas').offcanvas('show');
         };
 
-        window.officerCRUD.toggleStatus = (id, name) => {
+        window.academicPeriodCRUD.setCurrent = (id, label) => {
             Swal.fire({
-                title: 'Toggle Status',
-                text: `Are you sure you want to toggle the status of "${name}"?`,
+                title: 'Set Current Academic Period',
+                text: `Are you sure you want to make "${label}" the current academic period?`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, toggle it',
+                confirmButtonText: 'Yes, set it',
                 cancelButtonText: 'Cancel',
                 customClass: {
                     confirmButton: 'btn btn-primary me-3',
@@ -184,23 +181,23 @@ export default function Officer() {
                 buttonsStyling: false,
             }).then((result) => {
                 if (result.isConfirmed) {
-                    $.post(route('admin.users.toggle', id))
+                    $.post(route('admin.utilities.academic-periods.set-current', id))
                         .done((res) => {
-                            toastr.success(res.message || 'Status toggled successfully.');
+                            toastr.success(res.message || 'Academic period updated successfully.');
                             tableRef.current?.ajax.reload(null, false);
                             loadStats();
                         })
                         .fail(() => {
-                            toastr.error('Failed to toggle status.');
+                            toastr.error('Failed to set current academic period.');
                         });
                 }
             });
         };
 
-        window.officerCRUD.delete = (id, name) => {
+        window.academicPeriodCRUD.delete = (id, label) => {
             Swal.fire({
-                title: 'Delete Officer',
-                text: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+                title: 'Delete Academic Period',
+                text: `Are you sure you want to delete "${label}"? This action cannot be undone.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete',
@@ -213,84 +210,75 @@ export default function Officer() {
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: route('admin.users.delete', id),
+                        url: route('admin.utilities.academic-periods.delete', id),
                         type: 'DELETE',
                     })
                         .done((res) => {
-                            toastr.success(res.message || 'Officer deleted successfully.');
+                            toastr.success(res.message || 'Academic period deleted successfully.');
                             tableRef.current?.ajax.reload(null, false);
                             loadStats();
                         })
                         .fail(() => {
-                            toastr.error('Failed to delete officer.');
+                            toastr.error('Failed to delete academic period.');
                         });
                 }
             });
         };
 
-        // Cleanup on unmount
         return () => {
             table.destroy();
-            delete window.officerCRUD;
+            delete window.academicPeriodCRUD;
         };
     }, []);
 
     const handleSuccess = () => {
         setEditId(null);
+
         if (tableRef.current) {
             tableRef.current.ajax.reload(null, false);
         }
+
         loadStats();
     };
 
     return (
         <>
-            <Head title="User Management > Officer" />
+            <Head title="Utilities > Academic Period" />
 
-            <Base title="User Management > Officer">
+            <Base title="Utilities > Academic Period">
                 <div className="row mb-4">
                     <StatsCard
                         id="total"
-                        title="Total Officers"
-                        Icon={LuUsersRound}
+                        title="Total Academic Periods"
+                        Icon={LuCalendarDays}
                         iconSize="28"
                         bgColor="bg-primary"
-                        className="col-md-4"
+                        className="col-md-6"
                     />
 
                     <StatsCard
-                        id="active"
-                        Icon={LuUserRoundCheck}
+                        id="current"
+                        title="Current Academic Period"
+                        Icon={LuSchool}
                         iconSize="28"
-                        title="Active Officers"
                         bgColor="bg-success"
-                        className="col-md-4"
-                    />
-
-                    <StatsCard
-                        id="inactive"
-                        Icon={LuUserRoundX}
-                        iconSize="28"
-                        title="Inactive Officers"
-                        bgColor="bg-danger"
-                        className="col-md-4"
+                        className="col-md-6"
                     />
                 </div>
 
                 <div className="card">
                     <div className="card-datatable text-nowrap">
-                        <ScrollableTable id="officer-table">
+                        <ScrollableTable id="academic-period-table">
                             <th>Id</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Department</th>
-                            <th>Status</th>
+                            <th>Academic Year</th>
+                            <th>Semester</th>
+                            <th>Current</th>
                             <th>Actions</th>
                         </ScrollableTable>
                     </div>
                 </div>
 
-                <CreateAndEditOfficer editId={editId} departments={departments} onSuccess={handleSuccess} />
+                <CreateAndEditAcademicPeriod editId={editId} onSuccess={handleSuccess} />
             </Base>
         </>
     );

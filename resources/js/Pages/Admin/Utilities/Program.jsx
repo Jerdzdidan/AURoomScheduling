@@ -1,33 +1,33 @@
-import { usePage, Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
-import { LuUsersRound, LuUserRoundCheck, LuUserRoundX } from "react-icons/lu";
-import { BiToggleLeft, BiSolidToggleRight, BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
-import CreateAndEditOfficer from "./Forms/CreateAndEditOfficer";
+import CreateAndEditProgram from "./Forms/CreateAndEditProgram";
+import { LuBookOpen, LuDoorOpen } from "react-icons/lu";
+import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
-export default function Officer() {
+export default function Program() {
     const { departments = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
-        $.get(route('admin.users.stats', 'OFFICER')).done((stats) => {
+        $.get(route('admin.utilities.programs.stats')).done((stats) => {
             $('#total').text(stats.total);
-            $('#active').text(stats.active);
-            $('#inactive').text(stats.inactive);
+            $('#departments-covered').text(stats.departments_covered);
         });
     };
 
     useEffect(() => {
         loadStats();
+
         const heading = document.createElement("h5");
         heading.classList.add("card-title", "mb-0", "text-md-start", "text-center", "pb-md-0", "pb-6");
-        heading.innerHTML = "Officer Accounts";
+        heading.innerHTML = "Programs";
 
-        const table = window.$('#officer-table').DataTable({
+        const table = window.$('#program-table').DataTable({
             processing: true,
             serverSide: true,
             responsive: true,
@@ -59,21 +59,6 @@ export default function Officer() {
                                 className: "dropdown-item",
                                 exportOptions: {
                                     columns: [1, 2, 3, 4],
-                                    format: {
-                                        body: function (e, t, a) {
-                                            if (e.length <= 0)
-                                                return e;
-                                            e = (new DOMParser).parseFromString(e, "text/html");
-                                            let s = "";
-                                            var n = e.querySelectorAll(".user-name");
-                                            return 0 < n.length ? n.forEach(e => {
-                                                e = e.querySelector(".fw-medium")?.textContent || e.querySelector(".d-block")?.textContent || e.textContent;
-                                                s += e.trim() + " "
-                                            }
-                                            ) : s = e.body.textContent || e.body.innerText,
-                                                s.trim()
-                                        }
-                                    }
                                 }
                             }]
                         }, {
@@ -81,7 +66,7 @@ export default function Officer() {
                             className: "create-new btn btn-primary",
                             action: function () {
                                 setEditId(null);
-                                $('#officerOffcanvas').offcanvas('show');
+                                $('#programOffcanvas').offcanvas('show');
                             }
                         }]
                     }]
@@ -108,49 +93,44 @@ export default function Officer() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.users.data', 'OFFICER'),
+            ajax: route('admin.utilities.programs.data'),
             columns: [
                 { data: "id", visible: false },
-                { data: "name", width: "22%" },
-                { data: "email", width: "26%" },
+                { data: "name", width: "28%" },
+                { data: "code", width: "14%" },
                 {
                     data: "department_name",
-                    width: "20%",
-                    render: (data) => data && data !== '-'
-                        ? `<span class="badge bg-label-primary">${data}</span>`
-                        : '<span class="text-muted">Unassigned</span>',
+                    width: "28%",
+                    render: (data, type, row) => `
+                        <div class="d-flex flex-column">
+                            <span class="fw-medium">${data ?? '-'}</span>
+                            <small class="text-muted">${row.department_code ?? ''}</small>
+                        </div>
+                    `,
                 },
                 {
-                    data: "status",
-                    width: "12%",
-                    render: (data, type, row) => {
-                        const status = row.status ? 'Active' : 'Inactive';
-                        const badge = row.status ? 'success' : 'danger';
-                        return `<span class="badge bg-label-${badge}">${status}</span>`;
-                    }
+                    data: "description",
+                    width: "18%",
+                    render: (data) => {
+                        if (!data) return '<span class="text-muted">—</span>';
+                        const truncated = data.length > 50 ? data.substring(0, 50) + '…' : data;
+                        return `<span title="${data}">${truncated}</span>`;
+                    },
                 },
                 {
                     data: null,
                     orderable: false,
-                    width: "20%",
+                    width: "12%",
                     render: (data, type, row) => {
-                        const toggleIcon = row.status
-                            ? renderToString(<BiSolidToggleRight size={16} />)
-                            : renderToString(<BiToggleLeft size={16} />);
-
                         const editIcon = renderToString(<BiSolidEdit size={16} />);
                         const deleteIcon = renderToString(<BiSolidTrash size={16} />);
 
                         return `
-                            <button class="btn btn-sm btn-outline-primary" title="Toggle user status" onclick="officerCRUD.toggleStatus('${row.id}', '${row.name}')">
-                                ${toggleIcon}
-                            </button>
-
-                            <button class="btn btn-sm btn-outline-warning mx-1" title="Edit user: ${row.name}" onclick="officerCRUD.edit('${row.id}')">
+                            <button class="btn btn-sm btn-outline-warning me-1" title="Edit program: ${row.name}" onclick="programCRUD.edit('${row.id}')">
                                 ${editIcon}
                             </button>
 
-                            <button class="btn btn-sm btn-outline-danger" title="Delete user: ${row.name}" onclick="officerCRUD.delete('${row.id}', '${row.name}')">
+                            <button class="btn btn-sm btn-outline-danger" title="Delete program: ${row.name}" onclick="programCRUD.delete('${row.id}', '${row.name}')">
                                 ${deleteIcon}
                             </button>
                         `;
@@ -160,47 +140,17 @@ export default function Officer() {
         });
 
         tableRef.current = table;
+        window.programCRUD = window.programCRUD || {};
 
-        // Expose CRUD handlers globally for DataTable action buttons
-        window.officerCRUD = window.officerCRUD || {};
-
-        window.officerCRUD.edit = (id) => {
+        window.programCRUD.edit = (id) => {
             setEditId(id);
-            $('#officerOffcanvas').offcanvas('show');
+            $('#programOffcanvas').offcanvas('show');
         };
 
-        window.officerCRUD.toggleStatus = (id, name) => {
+        window.programCRUD.delete = (id, name) => {
             Swal.fire({
-                title: 'Toggle Status',
-                text: `Are you sure you want to toggle the status of "${name}"?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, toggle it',
-                cancelButtonText: 'Cancel',
-                customClass: {
-                    confirmButton: 'btn btn-primary me-3',
-                    cancelButton: 'btn btn-label-secondary',
-                },
-                buttonsStyling: false,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post(route('admin.users.toggle', id))
-                        .done((res) => {
-                            toastr.success(res.message || 'Status toggled successfully.');
-                            tableRef.current?.ajax.reload(null, false);
-                            loadStats();
-                        })
-                        .fail(() => {
-                            toastr.error('Failed to toggle status.');
-                        });
-                }
-            });
-        };
-
-        window.officerCRUD.delete = (id, name) => {
-            Swal.fire({
-                title: 'Delete Officer',
-                text: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+                title: 'Delete Program',
+                text: `Are you sure you want to delete "${name}"?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete',
@@ -213,84 +163,77 @@ export default function Officer() {
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: route('admin.users.delete', id),
+                        url: route('admin.utilities.programs.delete', id),
                         type: 'DELETE',
                     })
                         .done((res) => {
-                            toastr.success(res.message || 'Officer deleted successfully.');
+                            toastr.success(res.message || 'Program deleted successfully.');
                             tableRef.current?.ajax.reload(null, false);
                             loadStats();
                         })
-                        .fail(() => {
-                            toastr.error('Failed to delete officer.');
+                        .fail((xhr) => {
+                            const message = xhr.responseJSON?.message || 'Failed to delete program.';
+                            toastr.error(message);
                         });
                 }
             });
         };
 
-        // Cleanup on unmount
         return () => {
             table.destroy();
-            delete window.officerCRUD;
+            delete window.programCRUD;
         };
     }, []);
 
     const handleSuccess = () => {
         setEditId(null);
+
         if (tableRef.current) {
             tableRef.current.ajax.reload(null, false);
         }
+
         loadStats();
     };
 
     return (
         <>
-            <Head title="User Management > Officer" />
+            <Head title="Utilities > Program" />
 
-            <Base title="User Management > Officer">
+            <Base title="Utilities > Program">
                 <div className="row mb-4">
                     <StatsCard
                         id="total"
-                        title="Total Officers"
-                        Icon={LuUsersRound}
+                        title="Total Programs"
+                        Icon={LuBookOpen}
                         iconSize="28"
                         bgColor="bg-primary"
-                        className="col-md-4"
+                        className="col-md-6"
                     />
 
                     <StatsCard
-                        id="active"
-                        Icon={LuUserRoundCheck}
+                        id="departments-covered"
+                        title="Departments Covered"
+                        Icon={LuDoorOpen}
                         iconSize="28"
-                        title="Active Officers"
                         bgColor="bg-success"
-                        className="col-md-4"
-                    />
-
-                    <StatsCard
-                        id="inactive"
-                        Icon={LuUserRoundX}
-                        iconSize="28"
-                        title="Inactive Officers"
-                        bgColor="bg-danger"
-                        className="col-md-4"
+                        className="col-md-6"
                     />
                 </div>
 
                 <div className="card">
                     <div className="card-datatable text-nowrap">
-                        <ScrollableTable id="officer-table">
+                        <ScrollableTable id="program-table">
                             <th>Id</th>
                             <th>Name</th>
-                            <th>Email</th>
+                            <th>Code</th>
                             <th>Department</th>
-                            <th>Status</th>
+                            <th>Description</th>
                             <th>Actions</th>
                         </ScrollableTable>
                     </div>
                 </div>
 
-                <CreateAndEditOfficer editId={editId} departments={departments} onSuccess={handleSuccess} />
+                <CreateAndEditProgram editId={editId} departments={departments} onSuccess={handleSuccess} />
             </Base>
         </>
     );

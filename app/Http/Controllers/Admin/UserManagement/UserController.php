@@ -19,13 +19,13 @@ class UserController extends Controller
             ->where('name', '!=', 'root')
             ->select(['id', 'name', 'email', 'department_id', 'user_type', 'status']);
 
-        if ($request->filled('status') && $request->status !== 'All') {
-            if ($request->status === 'Active') {
-                $users->where('status', true);
-            } elseif ($request->status === 'Inactive') {
-                $users->where('status', false);
-            }
-        }
+        // if ($request->filled('status') && $request->status !== 'All') {
+        //     if ($request->status === 'Active') {
+        //         $users->where('status', true);
+        //     } elseif ($request->status === 'Inactive') {
+        //         $users->where('status', false);
+        //     }
+        // }
 
         return DataTables::of($users)
             ->editColumn('id', function ($row) {
@@ -63,6 +63,31 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid user ID. Could not delete.'
+            ], 400);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $decrypted = Crypt::decryptString($id);
+
+            $user = User::findOrFail($decrypted);
+            $user->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User deleted successfully.'
+            ]);
+        } catch (DecryptException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid user ID.'
             ], 400);
         } catch (Exception $e) {
             return response()->json([

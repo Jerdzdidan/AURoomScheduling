@@ -10,6 +10,7 @@
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
     <meta name="description" content="" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ asset('img/logo/arellano_logo.png') }}" />
@@ -94,6 +95,11 @@
 
     <!-- Core JS -->
     <script src="{{ asset('themes/sneat/assets/vendor/libs/jquery/jquery.js') }}"></script>
+    <script>
+        $.ajaxSetup({
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+        });
+    </script>
     <script src="{{ asset('themes/sneat/assets/vendor/libs/popper/popper.js') }}"></script>
     <script src="{{ asset('themes/sneat/assets/vendor/js/bootstrap.js') }}"></script>
     <script src="{{ asset('themes/sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
@@ -110,7 +116,8 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script src="{{ asset('themes/sneat/assets/js/main.js') }}"></script>
-    <!-- <script src="{{ asset('themes/sneat/assets/js/tables-datatables-basic.js') }}"></script> -->
+    <script src="{{ asset('themes/sneat/assets/js/tables-datatables-basic.js') }}"></script>
+    <script src="{{ asset('themes/sneat/assets/js/tables-datatables-extensions.js') }}"></script>
 
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 </body>

@@ -1,8 +1,6 @@
-import { forwardRef } from 'react';
-
-const ScrollableTable = forwardRef(({ children }, ref) => {
+const ScrollableTable = ({ id, children }) => {
     return (
-        <table ref={ref} className="dt-scrollableTable table table-bordered table-responsive">
+        <table id={id} className="dt-scrollableTable table table-bordered table-responsive">
             <thead>
                 <tr>
                     {children}
@@ -13,6 +11,6 @@ const ScrollableTable = forwardRef(({ children }, ref) => {
             </tbody>
         </table>
     );
-});
+};
 
 export default ScrollableTable;

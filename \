@@ -1,0 +1,141 @@
+import { usePage, Head } from "@inertiajs/react";
+import { useEffect } from "react";
+import Base from "@/Layouts/Base";
+import StatsCard from "@/Components/Card/StatsCard";
+import { LuUsersRound, LuUserRoundCheck, LuUserRoundX } from "react-icons/lu";
+import ScrollableTable from "@/Components/Table/ScrollableTable";
+
+export default function Admin() {
+    useEffect(() => {
+        const table = window.$('#admin-table').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            scrollY: "450px",
+            scrollX: true,
+            layout: {
+                topStart: {
+                    rowClass: "row mx-3 my-0 justify-content-between",
+                    features: [{
+                        pageLength: {
+                            menu: [10, 25, 50, 100],
+                            text: "Show_MENU_entries"
+                        }
+                    }]
+                },
+                topEnd: {
+                    search: {
+                        placeholder: ""
+                    }
+                },
+                bottomStart: {
+                    rowClass: "row mx-3 justify-content-between",
+                    features: ["info"]
+                },
+                bottomEnd: {
+                    paging: {
+                        firstLast: !1
+                    }
+                }
+            },
+            language: {
+                paginate: {
+                    next: '<i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-sm"></i>',
+                    previous: '<i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-sm"></i>'
+                }
+            },
+            ajax: route('admin.users.data', 'ADMIN'),
+            columns: [
+                { data: "id", visible: false },
+                { data: "name" },
+                { data: "email" },
+                {
+                    data: "status",
+                    render: (data, type, row) => {
+                        const status = row.status ? 'Active' : 'Inactive';
+                        const badge = row.status ? 'success' : 'danger';
+                        return `<span class="badge bg-label-${badge}">${status}</span>`;
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    render: (data, type, row) => {
+                        const toggleIcon = row.status
+                            ? '<i class="fa-solid fa-toggle-on"></i>'
+                            : '<i class="fa-solid fa-toggle-off"></i>';
+
+                        return `
+                            <button class="btn btn-sm btn-outline-primary" title="Toggle user status" onclick="adminCRUD.toggleStatus('${row.id}', '${row.name}')">
+                                ${toggleIcon}
+                            </button>
+
+                            <button class="btn btn-sm btn-outline-warning" title="Edit user: ${row.name}" onclick="adminCRUD.edit('${row.id}')">
+                                <i class="fa-solid fa-pencil"></i>
+                            </button>
+
+                            <button class="btn btn-sm btn-outline-danger" title="Delete user: ${row.name}" onclick="adminCRUD.delete('${row.id}', '${row.name}')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        `;
+                    }
+                }
+            ],
+        });
+
+        // Cleanup on unmount — very important!
+        return () => {
+            table.destroy();
+        };
+    }, []);
+
+    return (
+        <>
+            <Head title="User Management > Admin" />
+
+            <Base title="User Management > Admin">
+                <div className="row mb-4 mt-0">
+                    <StatsCard
+                        id="total"
+                        title="Total Admins"
+                        Icon={LuUsersRound}
+                        iconSize="28"
+                        bgColor="bg-primary"
+                        className="col-md-4"
+                    />
+
+                    <StatsCard
+                        id="active"
+                        Icon={LuUserRoundCheck}
+                        iconSize="28"
+                        title="Active Admins"
+                        bgColor="bg-success"
+                        className="col-md-4"
+                    />
+
+                    <StatsCard
+                        id="inactive"
+                        Icon={LuUserRoundX}
+                        iconSize="28"
+                        title="Inactive Admins"
+                        bgColor="bg-danger"
+                        className="col-md-4"
+                    />
+                </div>
+
+                <div className="card">
+                    {/* <h5 class="card-header pb-0 text-md-start text-center">Scrollable Table</h5> */}
+                    <div className="card-datatable text-nowrap">
+                        <ScrollableTable id="admin-table">
+                            <th>Id</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </ScrollableTable>
+                    </div>
+                </div>
+            </Base>
+        </>
+    );
+}
