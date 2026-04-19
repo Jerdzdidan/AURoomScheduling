@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Utilities\BranchController;
 use App\Http\Controllers\Admin\Utilities\DepartmentController;
 use App\Http\Controllers\Admin\Utilities\ProgramController;
 use App\Http\Controllers\Admin\Core\BuildingController;
+use App\Http\Controllers\Admin\Core\RoomScheduleController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\UserManagement\AdminController;
 use App\Http\Controllers\Admin\UserManagement\OfficerController;
@@ -104,6 +105,16 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::get('{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'show'])->name('show');
             Route::put('{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'update'])->name('update');
             Route::delete('delete/{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('room-schedules')->name('room-schedules.')->group(function () {
+            Route::get('/', [RoomScheduleController::class, 'index'])->name('index');
+            Route::get('data', [RoomScheduleController::class, 'getData'])->name('data');
+            Route::get('stats', [RoomScheduleController::class, 'getStats'])->name('stats');
+            Route::post('store', [RoomScheduleController::class, 'store'])->name('store');
+            Route::get('{id}', [RoomScheduleController::class, 'show'])->name('show');
+            Route::put('{id}', [RoomScheduleController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [RoomScheduleController::class, 'destroy'])->name('delete');
         });
 
         Route::prefix('subjects')->name('subjects.')->group(function () {

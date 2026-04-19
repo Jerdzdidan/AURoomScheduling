@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin\Core;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\Department;
 use App\Models\Program;
 use App\Models\Subject;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -16,9 +18,38 @@ class SubjectController extends Controller
     public function index()
     {
         return inertia('Admin/Core/Subject', [
-            'programs' => Program::query()
+            'branches' => Branch::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
+            'departments' => Department::query()
+                ->join('branches', 'departments.branch_id', '=', 'branches.id')
+                ->orderBy('branches.name')
+                ->orderBy('departments.name')
+                ->get([
+                    'departments.id',
+                    'departments.name',
+                    'departments.code',
+                    'departments.branch_id',
+                    'branches.name as branch_name',
+                    'branches.code as branch_code',
+                ]),
+            'programs' => Program::query()
+                ->join('departments', 'programs.department_id', '=', 'departments.id')
+                ->join('branches', 'departments.branch_id', '=', 'branches.id')
+                ->orderBy('branches.name')
+                ->orderBy('departments.name')
+                ->orderBy('programs.name')
+                ->get([
+                    'programs.id',
+                    'programs.name',
+                    'programs.code',
+                    'programs.department_id',
+                    'departments.name as department_name',
+                    'departments.code as department_code',
+                    'departments.branch_id',
+                    'branches.name as branch_name',
+                    'branches.code as branch_code',
+                ]),
         ]);
     }
 
@@ -26,6 +57,8 @@ class SubjectController extends Controller
     {
         $subjects = Subject::query()
             ->leftJoin('programs', 'subjects.program_id', '=', 'programs.id')
+            ->leftJoin('departments', 'programs.department_id', '=', 'departments.id')
+            ->leftJoin('branches', 'departments.branch_id', '=', 'branches.id')
             ->select([
                 'subjects.id',
                 'subjects.name',
@@ -33,6 +66,10 @@ class SubjectController extends Controller
                 'subjects.program_id',
                 'programs.name as program_name',
                 'programs.code as program_code',
+                'departments.name as department_name',
+                'departments.code as department_code',
+                'branches.name as branch_name',
+                'branches.code as branch_code',
             ]);
 
         return DataTables::of($subjects)
@@ -112,6 +149,13 @@ class SubjectController extends Controller
         ]);
 
         return $request->validate([
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'department_id' => [
+                'required',
+                'integer',
+                Rule::exists('departments', 'id')
+                    ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id'))),
+            ],
             'name' => ['required', 'string', 'max:255'],
             'code' => [
                 'required',
@@ -120,7 +164,12 @@ class SubjectController extends Controller
                 Rule::unique('subjects', 'code')
                     ->ignore($subject?->id),
             ],
-            'program_id' => ['required', 'integer', 'exists:programs,id'],
+            'program_id' => [
+                'required',
+                'integer',
+                Rule::exists('programs', 'id')
+                    ->where(fn ($query) => $query->where('department_id', $request->input('department_id'))),
+            ],
         ]);
     }
 

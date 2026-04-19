@@ -16,4 +16,9 @@ class Subject extends Model
     {
         return $this->belongsTo(Program::class);
     }
+
+    public function roomSchedules()
+    {
+        return $this->hasMany(RoomSchedule::class);
+    }
 }

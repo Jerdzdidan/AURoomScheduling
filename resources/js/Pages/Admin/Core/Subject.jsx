@@ -9,7 +9,7 @@ import { LuBookText, LuGraduationCap } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Subject() {
-    const { programs = [] } = usePage().props;
+    const { branches = [], departments = [], programs = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
@@ -105,6 +105,8 @@ export default function Subject() {
                         <div class="d-flex flex-column">
                             <span class="fw-medium">${data ?? '-'}</span>
                             <small class="text-muted">${row.program_code ?? ''}</small>
+                            <small class="text-muted">${row.department_code ?? ''}${row.department_name ? ` - ${row.department_name}` : ''}</small>
+                            <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
                         </div>
                     `,
                 },
@@ -223,7 +225,13 @@ export default function Subject() {
                     </div>
                 </div>
 
-                <CreateAndEditSubject editId={editId} programs={programs} onSuccess={handleSuccess} />
+                <CreateAndEditSubject
+                    editId={editId}
+                    branches={branches}
+                    departments={departments}
+                    programs={programs}
+                    onSuccess={handleSuccess}
+                />
             </Base>
         </>
     );

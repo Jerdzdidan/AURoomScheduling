@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Utilities;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Program;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -16,9 +17,21 @@ class ProgramController extends Controller
     public function index()
     {
         return inertia('Admin/Utilities/Program', [
-            'departments' => Department::query()
+            'branches' => Branch::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
+            'departments' => Department::query()
+                ->join('branches', 'departments.branch_id', '=', 'branches.id')
+                ->orderBy('branches.name')
+                ->orderBy('departments.name')
+                ->get([
+                    'departments.id',
+                    'departments.name',
+                    'departments.code',
+                    'departments.branch_id',
+                    'branches.name as branch_name',
+                    'branches.code as branch_code',
+                ]),
         ]);
     }
 
@@ -26,6 +39,7 @@ class ProgramController extends Controller
     {
         $programs = Program::query()
             ->leftJoin('departments', 'programs.department_id', '=', 'departments.id')
+            ->leftJoin('branches', 'departments.branch_id', '=', 'branches.id')
             ->select([
                 'programs.id',
                 'programs.name',
@@ -34,6 +48,8 @@ class ProgramController extends Controller
                 'programs.department_id',
                 'departments.name as department_name',
                 'departments.code as department_code',
+                'branches.name as branch_name',
+                'branches.code as branch_code',
             ]);
 
         return DataTables::of($programs)
@@ -114,6 +130,7 @@ class ProgramController extends Controller
         ]);
 
         return $request->validate([
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'name' => [
                 'required',
                 'string',
@@ -131,7 +148,12 @@ class ProgramController extends Controller
                     ->ignore($program?->id),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
-            'department_id' => ['required', 'integer', 'exists:departments,id'],
+            'department_id' => [
+                'required',
+                'integer',
+                Rule::exists('departments', 'id')
+                    ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id'))),
+            ],
         ]);
     }
 

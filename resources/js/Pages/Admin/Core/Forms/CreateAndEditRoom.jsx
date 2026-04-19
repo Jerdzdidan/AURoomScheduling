@@ -1,23 +1,32 @@
 import { useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import OffcanvasForm from '@/Components/Form/OffcanvasForm';
 import InputField from '@/Components/Input/InputField';
 import SelectField from '@/Components/Input/SelectField';
 
-const initialValues = {
+const getInitialValues = () => ({
+    branch_id: '',
     code: '',
     room_number: '',
     type: '',
     building_id: '',
-};
+});
 
-export default function CreateAndEditRoom({ editId, buildings, onSuccess }) {
+export default function CreateAndEditRoom({ editId, branches, buildings, onSuccess }) {
     const isEditing = !!editId;
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm(initialValues);
+    const { data, setData, post, put, processing, errors, clearErrors } = useForm(getInitialValues());
+
+    const filteredBuildings = useMemo(() => {
+        if (!data.branch_id) {
+            return [];
+        }
+
+        return buildings.filter((building) => building.branch_id?.toString() === data.branch_id?.toString());
+    }, [buildings, data.branch_id]);
 
     useEffect(() => {
         if (!editId) {
-            reset();
+            setData(getInitialValues());
             clearErrors();
             return;
         }
@@ -28,6 +37,7 @@ export default function CreateAndEditRoom({ editId, buildings, onSuccess }) {
                 const roomNumber = parts.length > 0 ? parts[parts.length - 1] : '';
 
                 setData({
+                    branch_id: room.branch_id?.toString() ?? '',
                     code: room.code ?? '',
                     room_number: roomNumber,
                     type: room.type ?? '',
@@ -37,40 +47,47 @@ export default function CreateAndEditRoom({ editId, buildings, onSuccess }) {
             .fail(() => {
                 toastr.error('Failed to load room details.');
             });
-    }, [editId]);
+    }, [editId, clearErrors, setData]);
 
     useEffect(() => {
         const $offcanvas = $('#roomOffcanvas');
 
         $offcanvas.on('hidden.bs.offcanvas', () => {
-            reset();
+            setData(getInitialValues());
             clearErrors();
         });
 
         return () => $offcanvas.off('hidden.bs.offcanvas');
-    }, []);
+    }, [clearErrors, setData]);
 
     const updateRoomCode = (buildingId, roomNumber) => {
         const selectedBuilding = buildings.find(b => b.id.toString() === buildingId?.toString());
         const buildingCode = selectedBuilding ? selectedBuilding.code : '';
-        return buildingCode && roomNumber ? `AUJSC-${buildingCode}-${roomNumber}` : '';
+
+        if (!buildingCode) {
+            return '';
+        }
+
+        return roomNumber
+            ? `AUJSC-${buildingCode}-${roomNumber}`
+            : `AUJSC-${buildingCode}-`;
     };
 
     const handleRoomNumberChange = (e) => {
         const val = e.target.value.toUpperCase();
-        setData(prev => ({
-            ...prev,
+        setData({
+            ...data,
             room_number: val,
-            code: updateRoomCode(prev.building_id, val)
-        }));
+            code: updateRoomCode(data.building_id, val),
+        });
     };
 
     const handleBuildingChange = (val) => {
-        setData(prev => ({
-            ...prev,
+        setData({
+            ...data,
             building_id: val,
-            code: updateRoomCode(val, prev.room_number)
-        }));
+            code: updateRoomCode(val, data.room_number),
+        });
     };
 
     const handleSubmit = (e) => {
@@ -78,7 +95,7 @@ export default function CreateAndEditRoom({ editId, buildings, onSuccess }) {
 
         const options = {
             onSuccess: () => {
-                reset();
+                setData(getInitialValues());
                 $('#roomOffcanvas').offcanvas('hide');
                 toastr.success(
                     isEditing
@@ -122,15 +139,40 @@ export default function CreateAndEditRoom({ editId, buildings, onSuccess }) {
             />
 
             <SelectField
+                id="room-branch"
+                label="Branch"
+                name="branch_id"
+                placeholder="Select a branch"
+                value={data.branch_id}
+                onChange={(val) => {
+                    setData({
+                        ...data,
+                        branch_id: val,
+                        building_id: '',
+                        code: updateRoomCode('', data.room_number),
+                    });
+                }}
+                options={branches}
+                dropdownParent="#roomOffcanvas"
+                error={errors.branch_id}
+                help="Create a branch first before adding a room."
+            />
+
+            <SelectField
                 id="room-building"
                 label="Building"
                 name="building_id"
-                placeholder="Select a building"
+                placeholder={data.branch_id ? 'Select a building' : 'Select a branch first'}
                 value={data.building_id}
                 onChange={handleBuildingChange}
-                options={buildings}
+                options={filteredBuildings}
+                renderOption={(building) => `${building.code} - ${building.name}`}
                 dropdownParent="#roomOffcanvas"
                 error={errors.building_id}
+                help={data.branch_id
+                    ? 'No buildings found for the selected branch.'
+                    : 'Select a branch first before choosing a building.'}
+                disabled={!data.branch_id}
             />
 
             <InputField

@@ -14,7 +14,7 @@ class UserController extends Controller
 {
     public function getData(Request $request, $user_type)
     {
-        $users = User::with('department:id,name')
+        $users = User::with('department:id,name,code,branch_id', 'department.branch:id,name,code')
             ->where('user_type', $user_type)
             ->where('name', '!=', 'root')
             ->select(['id', 'name', 'email', 'department_id', 'user_type', 'status']);
@@ -33,6 +33,15 @@ class UserController extends Controller
             })
             ->addColumn('department_name', function ($row) {
                 return $row->department ? $row->department->name : '-';
+            })
+            ->addColumn('department_code', function ($row) {
+                return $row->department?->code ?? '';
+            })
+            ->addColumn('branch_name', function ($row) {
+                return $row->department?->branch?->name ?? '';
+            })
+            ->addColumn('branch_code', function ($row) {
+                return $row->department?->branch?->code ?? '';
             })
             ->make(true);
     }

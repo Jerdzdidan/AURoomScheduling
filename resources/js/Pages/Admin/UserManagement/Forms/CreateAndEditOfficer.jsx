@@ -1,31 +1,47 @@
 import { useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import OffcanvasForm from '@/Components/Form/OffcanvasForm';
 import InputField from '@/Components/Input/InputField';
 import SelectField from '@/Components/Input/SelectField';
 
-export default function CreateAndEditOfficer({ editId, departments, onSuccess }) {
+const getInitialValues = () => ({
+    branch_id: '',
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    department_id: '',
+});
+
+export default function CreateAndEditOfficer({ editId, branches, departments, onSuccess }) {
     const isEditing = !!editId;
 
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
-        department_id: '',
-    });
+    const { data, setData, post, put, processing, errors, clearErrors } = useForm(getInitialValues());
+
+    const filteredDepartments = useMemo(() => {
+        if (!data.branch_id) {
+            return [];
+        }
+
+        return departments.filter((department) => department.branch_id?.toString() === data.branch_id?.toString());
+    }, [departments, data.branch_id]);
 
     // When editId changes, fetch the user data to populate the form
     useEffect(() => {
         if (!editId) {
-            reset();
+            setData(getInitialValues());
             clearErrors();
             return;
         }
 
         $.get(route('admin.users.officer-accounts.show', editId))
             .done((user) => {
+                const selectedDepartment = departments.find(
+                    (department) => department.id?.toString() === user.department_id?.toString()
+                );
+
                 setData({
+                    branch_id: selectedDepartment?.branch_id?.toString() ?? '',
                     name: user.name ?? '',
                     email: user.email ?? '',
                     password: '',
@@ -36,23 +52,23 @@ export default function CreateAndEditOfficer({ editId, departments, onSuccess })
             .fail(() => {
                 toastr.error('Failed to load officer details.');
             });
-    }, [editId]);
+    }, [editId, departments, clearErrors, setData]);
 
     useEffect(() => {
         const $offcanvas = $('#officerOffcanvas');
         $offcanvas.on('hidden.bs.offcanvas', () => {
-            reset();
+            setData(getInitialValues());
             clearErrors();
         });
         return () => $offcanvas.off('hidden.bs.offcanvas');
-    }, []);
+    }, [clearErrors, setData]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         const options = {
             onSuccess: () => {
-                reset();
+                setData(getInitialValues());
                 $('#officerOffcanvas').offcanvas('hide');
                 toastr.success(
                     isEditing
@@ -102,16 +118,39 @@ export default function CreateAndEditOfficer({ editId, departments, onSuccess })
             />
 
             <SelectField
+                id="officer-branch"
+                label="Branch"
+                name="branch_id"
+                placeholder="Select a branch"
+                value={data.branch_id}
+                onChange={(val) => {
+                    setData((current) => ({
+                        ...current,
+                        branch_id: val,
+                        department_id: '',
+                    }));
+                }}
+                options={branches}
+                dropdownParent="#officerOffcanvas"
+                error={errors.branch_id}
+                help="Create a branch first before assigning an officer."
+            />
+
+            <SelectField
                 id="officer-department"
                 label="Department"
                 name="department_id"
-                placeholder="Select a department"
+                placeholder={data.branch_id ? 'Select a department' : 'Select a branch first'}
                 value={data.department_id}
                 onChange={(val) => setData('department_id', val)}
-                options={departments}
+                options={filteredDepartments}
+                renderOption={(department) => `${department.code} - ${department.name}`}
                 dropdownParent="#officerOffcanvas"
                 error={errors.department_id}
-                help="Create a department first before adding an officer."
+                help={data.branch_id
+                    ? 'No departments found for the selected branch.'
+                    : 'Select a branch first before choosing a department.'}
+                disabled={!data.branch_id}
             />
 
             <InputField

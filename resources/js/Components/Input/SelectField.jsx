@@ -27,6 +27,7 @@ export default function SelectField({
     dropdownParent,
     error,
     help,
+    disabled = false,
 }) {
     const selectRef = useRef(null);
 
@@ -67,7 +68,7 @@ export default function SelectField({
                 $select.select2('destroy');
             }
         };
-    }, [options, dropdownParent]);
+    }, [options, dropdownParent, disabled]);
 
     // Sync Select2 value with React state
     useEffect(() => {
@@ -110,6 +111,7 @@ export default function SelectField({
                 name={name}
                 className="form-select"
                 defaultValue=""
+                disabled={disabled}
             >
                 <option value=""></option>
                 {options.map((option) => (

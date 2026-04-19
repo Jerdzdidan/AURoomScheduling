@@ -85,7 +85,7 @@ export default function CreateAndEditDepartment({ editId, branches, onSuccess })
                 label="Department Name"
                 name="name"
                 icon="bx bx-buildings"
-                placeholder="College of Engineering"
+                placeholder="School of Computer Studies"
                 value={data.name}
                 onChange={(e) => setData('name', e.target.value)}
                 error={errors.name}
@@ -96,7 +96,7 @@ export default function CreateAndEditDepartment({ editId, branches, onSuccess })
                 label="Department Code"
                 name="code"
                 icon="bx bx-purchase-tag"
-                placeholder="ENG"
+                placeholder="SCS"
                 value={data.code}
                 onChange={(e) => setData('code', e.target.value.toUpperCase())}
                 error={errors.code}

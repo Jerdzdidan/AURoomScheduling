@@ -9,7 +9,7 @@ import ScrollableTable from "@/Components/Table/ScrollableTable";
 import CreateAndEditOfficer from "./Forms/CreateAndEditOfficer";
 
 export default function Officer() {
-    const { departments = [] } = usePage().props;
+    const { branches = [], departments = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
@@ -116,8 +116,14 @@ export default function Officer() {
                 {
                     data: "department_name",
                     width: "20%",
-                    render: (data) => data && data !== '-'
-                        ? `<span class="badge bg-label-primary">${data}</span>`
+                    render: (data, type, row) => data && data !== '-'
+                        ? `
+                            <div class="d-flex flex-column">
+                                <span class="badge bg-label-primary align-self-start">${data}</span>
+                                <small class="text-muted mt-1">${row.department_code ?? ''}</small>
+                                <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
+                            </div>
+                        `
                         : '<span class="text-muted">Unassigned</span>',
                 },
                 {
@@ -290,7 +296,12 @@ export default function Officer() {
                     </div>
                 </div>
 
-                <CreateAndEditOfficer editId={editId} departments={departments} onSuccess={handleSuccess} />
+                <CreateAndEditOfficer
+                    editId={editId}
+                    branches={branches}
+                    departments={departments}
+                    onSuccess={handleSuccess}
+                />
             </Base>
         </>
     );

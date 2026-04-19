@@ -36,7 +36,7 @@ function Admin() {
             </li>
 
             <SidebarItem
-                routeName="_"
+                routeName="admin.core.room-schedules.index"
                 Icon={LuCalendarRange}
                 name="Room Schedule"
             />

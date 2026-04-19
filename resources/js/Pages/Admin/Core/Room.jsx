@@ -9,7 +9,7 @@ import { LuDoorOpen, LuBuilding2 } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Room() {
-    const { buildings = [] } = usePage().props;
+    const { branches = [], buildings = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
@@ -111,6 +111,7 @@ export default function Room() {
                         <div class="d-flex flex-column">
                             <span class="fw-medium">${data ?? '-'}</span>
                             <small class="text-muted">${row.building_code ?? ''}</small>
+                            <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
                         </div>
                     `,
                 },
@@ -229,7 +230,12 @@ export default function Room() {
                     </div>
                 </div>
 
-                <CreateAndEditRoom editId={editId} buildings={buildings} onSuccess={handleSuccess} />
+                <CreateAndEditRoom
+                    editId={editId}
+                    branches={branches}
+                    buildings={buildings}
+                    onSuccess={handleSuccess}
+                />
             </Base>
         </>
     );

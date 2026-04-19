@@ -29,4 +29,9 @@ class AcademicPeriod extends Model
                 END DESC
             ");
     }
+
+    public function roomSchedules()
+    {
+        return $this->hasMany(RoomSchedule::class);
+    }
 }

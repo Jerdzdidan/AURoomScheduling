@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin\UserManagement;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Department;
 use App\Models\User;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 
 class OfficerController extends Controller
@@ -15,9 +17,21 @@ class OfficerController extends Controller
     public function index()
     {
         return inertia('Admin/UserManagement/Officer', [
-            'departments' => Department::query()
+            'branches' => Branch::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
+            'departments' => Department::query()
+                ->join('branches', 'departments.branch_id', '=', 'branches.id')
+                ->orderBy('branches.name')
+                ->orderBy('departments.name')
+                ->get([
+                    'departments.id',
+                    'departments.name',
+                    'departments.code',
+                    'departments.branch_id',
+                    'branches.name as branch_name',
+                    'branches.code as branch_code',
+                ]),
         ]);
     }
 
@@ -27,7 +41,13 @@ class OfficerController extends Controller
             'name'          => 'required|string|max:255',
             'email'         => 'required|string|email|max:255|unique:users,email',
             'password'      => ['required', 'confirmed', Rules\Password::defaults()],
-            'department_id' => 'required|integer|exists:departments,id',
+            'branch_id'     => 'required|integer|exists:branches,id',
+            'department_id' => [
+                'required',
+                'integer',
+                Rule::exists('departments', 'id')
+                    ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id'))),
+            ],
         ]);
 
         User::create([
@@ -68,7 +88,13 @@ class OfficerController extends Controller
             $rules = [
                 'name'          => 'required|string|max:255',
                 'email'         => 'required|string|email|max:255|unique:users,email,' . $user->id,
-                'department_id' => 'required|integer|exists:departments,id',
+                'branch_id'     => 'required|integer|exists:branches,id',
+                'department_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('departments', 'id')
+                        ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id'))),
+                ],
             ];
 
             if ($request->filled('password')) {

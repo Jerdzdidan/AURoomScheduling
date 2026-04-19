@@ -9,7 +9,7 @@ import { LuBookOpen, LuDoorOpen } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Program() {
-    const { departments = [] } = usePage().props;
+    const { branches = [], departments = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
@@ -105,6 +105,7 @@ export default function Program() {
                         <div class="d-flex flex-column">
                             <span class="fw-medium">${data ?? '-'}</span>
                             <small class="text-muted">${row.department_code ?? ''}</small>
+                            <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
                         </div>
                     `,
                 },
@@ -233,7 +234,12 @@ export default function Program() {
                     </div>
                 </div>
 
-                <CreateAndEditProgram editId={editId} departments={departments} onSuccess={handleSuccess} />
+                <CreateAndEditProgram
+                    editId={editId}
+                    branches={branches}
+                    departments={departments}
+                    onSuccess={handleSuccess}
+                />
             </Base>
         </>
     );

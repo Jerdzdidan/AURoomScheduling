@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Core;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Building;
 use App\Models\Room;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -16,9 +17,21 @@ class RoomController extends Controller
     public function index()
     {
         return inertia('Admin/Core/Room', [
-            'buildings' => Building::query()
+            'branches' => Branch::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
+            'buildings' => Building::query()
+                ->join('branches', 'buildings.branch_id', '=', 'branches.id')
+                ->orderBy('branches.name')
+                ->orderBy('buildings.name')
+                ->get([
+                    'buildings.id',
+                    'buildings.name',
+                    'buildings.code',
+                    'buildings.branch_id',
+                    'branches.name as branch_name',
+                    'branches.code as branch_code',
+                ]),
         ]);
     }
 
@@ -26,6 +39,7 @@ class RoomController extends Controller
     {
         $rooms = Room::query()
             ->leftJoin('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->leftJoin('branches', 'buildings.branch_id', '=', 'branches.id')
             ->select([
                 'rooms.id',
                 'rooms.code',
@@ -33,6 +47,8 @@ class RoomController extends Controller
                 'rooms.building_id',
                 'buildings.name as building_name',
                 'buildings.code as building_code',
+                'branches.name as branch_name',
+                'branches.code as branch_code',
             ]);
 
         return DataTables::of($rooms)
@@ -60,6 +76,7 @@ class RoomController extends Controller
                 'code' => $room->code,
                 'type' => $room->type,
                 'building_id' => $room->building_id,
+                'branch_id' => $room->building?->branch_id,
             ]);
         } catch (DecryptException) {
             return response()->json(['message' => 'Invalid room ID.'], 400);
@@ -90,13 +107,12 @@ class RoomController extends Controller
         try {
             $room = $this->findRoomOrFail($id);
 
-            // We can add checks here if the room has scheduled classes/sections later.
-            // if ($room->schedules()->exists()) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'This room cannot be deleted while it still has schedules.',
-            //     ], 422);
-            // }
+            if ($room->schedules()->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This room cannot be deleted while it still has schedules.',
+                ], 422);
+            }
 
             $room->delete();
 
@@ -119,6 +135,7 @@ class RoomController extends Controller
         ]);
 
         return $request->validate([
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'code' => [
                 'required',
                 'string',
@@ -128,7 +145,12 @@ class RoomController extends Controller
                     ->ignore($room?->id),
             ],
             'type' => ['required', 'string', 'max:255'],
-            'building_id' => ['required', 'integer', 'exists:buildings,id'],
+            'building_id' => [
+                'required',
+                'integer',
+                Rule::exists('buildings', 'id')
+                    ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id'))),
+            ],
         ]);
     }
 
@@ -136,6 +158,6 @@ class RoomController extends Controller
     {
         $decrypted = Crypt::decryptString($id);
 
-        return Room::findOrFail($decrypted);
+        return Room::with('building')->findOrFail($decrypted);
     }
 }

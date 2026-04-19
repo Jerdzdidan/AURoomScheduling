@@ -1,30 +1,44 @@
 import { useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import OffcanvasForm from '@/Components/Form/OffcanvasForm';
 import InputField from '@/Components/Input/InputField';
 import SelectField from '@/Components/Input/SelectField';
 
-const initialValues = {
+const getInitialValues = () => ({
+    branch_id: '',
     name: '',
     code: '',
     description: '',
     department_id: '',
-};
+});
 
-export default function CreateAndEditProgram({ editId, departments, onSuccess }) {
+export default function CreateAndEditProgram({ editId, branches, departments, onSuccess }) {
     const isEditing = !!editId;
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm(initialValues);
+    const { data, setData, post, put, processing, errors, clearErrors } = useForm(getInitialValues());
+
+    const filteredDepartments = useMemo(() => {
+        if (!data.branch_id) {
+            return [];
+        }
+
+        return departments.filter((department) => department.branch_id?.toString() === data.branch_id?.toString());
+    }, [departments, data.branch_id]);
 
     useEffect(() => {
         if (!editId) {
-            reset();
+            setData(getInitialValues());
             clearErrors();
             return;
         }
 
         $.get(route('admin.utilities.programs.show', editId))
             .done((program) => {
+                const selectedDepartment = departments.find(
+                    (department) => department.id?.toString() === program.department_id?.toString()
+                );
+
                 setData({
+                    branch_id: selectedDepartment?.branch_id?.toString() ?? '',
                     name: program.name ?? '',
                     code: program.code ?? '',
                     description: program.description ?? '',
@@ -34,25 +48,25 @@ export default function CreateAndEditProgram({ editId, departments, onSuccess })
             .fail(() => {
                 toastr.error('Failed to load program details.');
             });
-    }, [editId]);
+    }, [editId, departments, clearErrors, setData]);
 
     useEffect(() => {
         const $offcanvas = $('#programOffcanvas');
 
         $offcanvas.on('hidden.bs.offcanvas', () => {
-            reset();
+            setData(getInitialValues());
             clearErrors();
         });
 
         return () => $offcanvas.off('hidden.bs.offcanvas');
-    }, []);
+    }, [clearErrors, setData]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         const options = {
             onSuccess: () => {
-                reset();
+                setData(getInitialValues());
                 $('#programOffcanvas').offcanvas('hide');
                 toastr.success(
                     isEditing
@@ -105,16 +119,39 @@ export default function CreateAndEditProgram({ editId, departments, onSuccess })
             />
 
             <SelectField
+                id="program-branch"
+                label="Branch"
+                name="branch_id"
+                placeholder="Select a branch"
+                value={data.branch_id}
+                onChange={(val) => {
+                    setData((current) => ({
+                        ...current,
+                        branch_id: val,
+                        department_id: '',
+                    }));
+                }}
+                options={branches}
+                dropdownParent="#programOffcanvas"
+                error={errors.branch_id}
+                help="Create a branch first before adding a program."
+            />
+
+            <SelectField
                 id="program-department"
                 label="Department"
                 name="department_id"
-                placeholder="Select a department"
+                placeholder={data.branch_id ? 'Select a department' : 'Select a branch first'}
                 value={data.department_id}
                 onChange={(val) => setData('department_id', val)}
-                options={departments}
+                options={filteredDepartments}
+                renderOption={(department) => `${department.code} - ${department.name}`}
                 dropdownParent="#programOffcanvas"
                 error={errors.department_id}
-                help="Create a department first before adding a program."
+                help={data.branch_id
+                    ? 'No departments found for the selected branch.'
+                    : 'Select a branch first before choosing a department.'}
+                disabled={!data.branch_id}
             />
 
             <div className="mb-3">
