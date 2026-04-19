@@ -1,0 +1,48 @@
+/* ── Sidebar Overrides ───────────────────────────────────────── */
+
+/* Active menu item – danger-colored background */
+.layout-menu.bg-primary .menu-inner > .menu-item.active > .menu-link:not(.menu-toggle) {
+    background-color: var(--bs-danger) !important;
+    color: #fff !important;
+}
+
+/* Active indicator bar on the right edge */
+.layout-wrapper:not(.layout-horizontal) .layout-menu.bg-primary .menu-inner > .menu-item.active::before {
+    background-color: var(--bs-danger) !important;
+}
+
+/* Active sub-bullet dot */
+.layout-menu.bg-primary .menu-item.active:not(.open) > .menu-link:not(.menu-toggle)::before {
+    background-color: var(--bs-danger) !important;
+    box-shadow: 0 0 0 3px rgba(var(--bs-danger-rgb), 0.25) !important;
+}
+
+/* Hover state on non-active items */
+.layout-menu.bg-primary .menu-item:not(.active):not(.open) .menu-link:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Menu link text color – keep white */
+.layout-menu.bg-primary .menu-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.layout-menu.bg-primary .menu-link:hover,
+.layout-menu.bg-primary .menu-link:focus {
+    color: #fff !important;
+}
+
+/* Active link text stays fully white */
+.layout-menu.bg-primary .menu-item.active > .menu-link {
+    color: #fff !important;
+}
+
+/* Section headers */
+.layout-menu.bg-primary .menu-header .menu-header-text {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Section header divider line */
+.layout-menu.bg-primary .menu-header::before {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}

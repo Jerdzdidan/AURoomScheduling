@@ -1,33 +1,33 @@
 /* LOGO */
 .app-brand-logo img {
-  width: calc(30px + 2vw);
-  max-width: 50px;
-  height: auto;
+    width: calc(30px + 2vw);
+    max-width: 50px;
+    height: auto;
 }
 
-#layout-menu{
-  border-radius: 0px 30px 30px 0px;
-  box-shadow: 5px 0px 10px #00000028;
+#layout-menu {
+    background-color: #b7303d;
+    /* border-radius: 0px -30px -30px 0px; */
+    box-shadow: 5px 0px 10px #00000028;
 }
 
 #layout-menu i {
-  font-size: calc(0.9rem + 0.25vw);
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.2em; 
-  height: 1.2em;
+    font-size: calc(0.9rem + 0.25vw);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2em;
+    height: 1.2em;
 }
 
-#layout-navbar{
-  box-shadow: 0px 1px 10px #00000028;
+#layout-navbar {
+    box-shadow: 0px 1px 10px #00000028;
 }
 
 .swal2-container {
-    z-index: 999999 !important; 
+    z-index: 999999 !important;
 }
-
 
 /* For underlining links */
 .hover-underline-ltr {
@@ -49,8 +49,9 @@
 
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.25s ease-in-out,
-                background-color 0.15s ease;
+    transition:
+        transform 0.25s ease-in-out,
+        background-color 0.15s ease;
 }
 
 .hover-underline-ltr:hover::after {
@@ -59,7 +60,7 @@
 
 /* 👇 CLICK FEEDBACK */
 .hover-underline-ltr:active {
-    color: #0d6efd!important; /* Bootstrap primary */
+    color: #0d6efd !important; /* Bootstrap primary */
 }
 
 .hover-underline-ltr:active::after {

@@ -65,6 +65,7 @@
     <link rel="stylesheet" href="{{ asset('css/layout/select2.css') }}">
     <link rel="stylesheet" href="{{ asset('css/layout/layout_custom.css') }}">
     <link rel="stylesheet" href="{{ asset('css/layout/delete_popup_modal.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/layout/layout.css') }}">
 
     <!-- Helpers -->
     <script src="{{ asset('themes/sneat/assets/vendor/js/helpers.js') }}"></script>

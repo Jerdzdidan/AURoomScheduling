@@ -25,6 +25,10 @@ function Admin() {
             {/*     /> */}
             {/* ))} */}
 
+            <div className="mt-2">
+
+            </div>
+
             <SidebarItem
                 routeName="admin.index"
                 Icon={LuHouse}
@@ -32,7 +36,7 @@ function Admin() {
             />
 
             <li className="menu-header small text-uppercase">
-                <span className="menu-header-text">Core</span>
+                <span className="menu-header-text text-white">Core</span>
             </li>
 
             <SidebarItem
@@ -66,7 +70,7 @@ function Admin() {
             />
 
             <li className="menu-header small text-uppercase">
-                <span className="menu-header-text">User Management</span>
+                <span className="menu-header-text text-white">User Management</span>
             </li>
 
             <SidebarItem
@@ -82,7 +86,7 @@ function Admin() {
             />
 
             <li className="menu-header small text-uppercase">
-                <span className="menu-header-text">Utilities</span>
+                <span className="menu-header-text text-white">Utilities</span>
             </li>
 
             <SidebarItem
