@@ -8,14 +8,18 @@ export default function InputField({
     value, 
     onChange, 
     error, 
-    help 
+    help,
+    disabled = false,
+    readOnly = false,
 }) {
     return (
         <div className="mb-3">
             {label && <label className="form-label" htmlFor={id}>{label}</label>}
-            <div className="input-group input-group-merge mb-2">
+            <div className={`input-group ${disabled ? '' : 'input-group-merge'} mb-2`}>
                 {icon && (
-                    <span className="input-group-text" style={error ? { borderColor: '#fc4225' } : {}}>
+                    <span className="input-group-text" style={{ 
+                        ...(error ? { borderColor: '#fc4225' } : {})
+                    }}>
                         <i className={icon}></i>
                     </span>
                 )}
@@ -28,6 +32,8 @@ export default function InputField({
                     aria-label={label} 
                     value={value} 
                     onChange={onChange}
+                    disabled={disabled}
+                    readOnly={readOnly}
                     style={error ? { borderColor: '#fc4225' } : {}}
                 />
             </div>

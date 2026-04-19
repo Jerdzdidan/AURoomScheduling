@@ -3,7 +3,8 @@ import SidebarItem from "@/Components/Sidebar/SidebarItem";
 import Bar from "@/Components/Sidebar/Bar";
 import {
     LuUserRoundCog, LuIdCard, LuCalendarRange, LuHouse, LuBookText,
-    LuSchool, LuUniversity, LuDoorOpen, LuGraduationCap
+    LuSchool, LuUniversity, LuDoorOpen, LuGraduationCap, LuBuilding2,
+    LuLayoutList, LuUsers
 } from "react-icons/lu";
 
 function Admin() {
@@ -41,7 +42,25 @@ function Admin() {
             />
 
             <SidebarItem
+                routeName="admin.core.buildings.index"
+                Icon={LuBuilding2}
+                name="Building"
+            />
+
+            <SidebarItem
+                routeName="admin.core.rooms.index"
+                Icon={LuDoorOpen}
+                name="Room"
+            />
+
+            <SidebarItem
                 routeName="_"
+                Icon={LuUsers}
+                name="Professor"
+            />
+
+            <SidebarItem
+                routeName="admin.core.subjects.index"
                 Icon={LuBookText}
                 name="Subjects"
             />
@@ -80,7 +99,7 @@ function Admin() {
 
             <SidebarItem
                 routeName="admin.utilities.departments.index"
-                Icon={LuDoorOpen}
+                Icon={LuLayoutList}
                 name="Departments"
             />
 

@@ -1,31 +1,22 @@
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
-import CreateAndEditAcademicPeriod from "./Forms/CreateAndEditAcademicPeriod";
-import { LuCalendarDays, LuSchool } from "react-icons/lu";
-import { BiSolidEdit, BiSolidStar, BiStar, BiSolidTrash } from "react-icons/bi";
+import CreateAndEditBuilding from "./Forms/CreateAndEditBuilding";
+import { LuBuilding2, LuUniversity } from "react-icons/lu";
+import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
-const semesterLabels = {
-    '1ST': '1st Semester',
-    '2ND': '2nd Semester',
-    'SUMMER': 'Summer',
-};
-
-const getSemesterLabel = (semester) => semesterLabels[semester] ?? semester;
-
-const getAcademicPeriodLabel = (row) => `A.Y. ${row.academic_year} - ${getSemesterLabel(row.semester)}`;
-
-export default function AcademicPeriod() {
+export default function Building() {
+    const { branches = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
-        $.get(route('admin.utilities.academic-periods.stats')).done((stats) => {
+        $.get(route('admin.core.buildings.stats')).done((stats) => {
             $('#total').text(stats.total);
-            $('#current').text(stats.current ?? 'None');
+            $('#branches-covered').text(stats.branches_covered);
         });
     };
 
@@ -34,12 +25,11 @@ export default function AcademicPeriod() {
 
         const heading = document.createElement("h5");
         heading.classList.add("card-title", "mb-0", "text-md-start", "text-center", "pb-md-0", "pb-6");
-        heading.innerHTML = "Academic Periods";
+        heading.innerHTML = "Buildings";
 
-        const table = window.$('#academic-period-table').DataTable({
+        const table = window.$('#building-table').DataTable({
             processing: true,
             serverSide: true,
-            order: [],
             responsive: true,
             scrollY: "405px",
             scrollX: true,
@@ -68,7 +58,7 @@ export default function AcademicPeriod() {
                                 text: '<span class="d-flex align-items-center"><i class="icon-base bx bx-file me-1"></i>Csv</span>',
                                 className: "dropdown-item",
                                 exportOptions: {
-                                    columns: [1, 2, 3],
+                                    columns: [1, 2, 3, 4],
                                 }
                             }]
                         }, {
@@ -76,7 +66,7 @@ export default function AcademicPeriod() {
                             className: "create-new btn btn-primary",
                             action: function () {
                                 setEditId(null);
-                                $('#academicPeriodOffcanvas').offcanvas('show');
+                                $('#buildingOffcanvas').offcanvas('show');
                             }
                         }]
                     }]
@@ -103,54 +93,40 @@ export default function AcademicPeriod() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.utilities.academic-periods.data'),
+            ajax: route('admin.core.buildings.data'),
             columns: [
                 { data: "id", visible: false },
+                { data: "name", width: "30%" },
+                { data: "code", width: "15%" },
                 {
-                    data: "academic_year",
-                    width: "26%",
-                    render: (data) => `A.Y. ${data}`,
+                    data: "branch_name",
+                    width: "30%",
+                    render: (data, type, row) => `
+                        <div class="d-flex flex-column">
+                            <span class="fw-medium">${data ?? '-'}</span>
+                            <small class="text-muted">${row.branch_code ?? ''}</small>
+                        </div>
+                    `,
                 },
                 {
-                    data: "semester",
-                    width: "24%",
-                    render: (data) => getSemesterLabel(data),
-                },
-                {
-                    data: "is_current",
-                    width: "18%",
-                    render: (data) => {
-                        const badge = data ? 'success' : 'secondary';
-                        const label = data ? 'Current' : 'Not Current';
-
-                        return `<span class="badge bg-label-${badge}">${label}</span>`;
-                    }
+                    data: "rooms_count",
+                    width: "10%",
+                    render: (data) => `<span class="badge bg-label-primary">${data}</span>`,
                 },
                 {
                     data: null,
                     orderable: false,
-                    width: "32%",
+                    width: "15%",
                     render: (data, type, row) => {
-                        const setCurrentIcon = row.is_current
-                            ? renderToString(<BiSolidStar size={16} />)
-                            : renderToString(<BiStar size={16} />);
                         const editIcon = renderToString(<BiSolidEdit size={16} />);
                         const deleteIcon = renderToString(<BiSolidTrash size={16} />);
-                        const currentButtonClass = row.is_current ? 'btn-outline-secondary disabled' : 'btn-outline-primary';
-                        const currentButtonAction = row.is_current
-                            ? ''
-                            : `onclick="academicPeriodCRUD.setCurrent('${row.id}', '${getAcademicPeriodLabel(row)}')"`;
 
                         return `
-                            <button class="btn btn-sm ${currentButtonClass}" title="${row.is_current ? 'Already current' : 'Set as current academic period'}" ${row.is_current ? 'disabled' : ''} ${currentButtonAction}>
-                                ${setCurrentIcon}
-                            </button>
-
-                            <button class="btn btn-sm btn-outline-warning mx-1" title="Edit ${getAcademicPeriodLabel(row)}" onclick="academicPeriodCRUD.edit('${row.id}')">
+                            <button class="btn btn-sm btn-outline-warning me-1" title="Edit building: ${row.name}" onclick="buildingCRUD.edit('${row.id}')">
                                 ${editIcon}
                             </button>
 
-                            <button class="btn btn-sm btn-outline-danger" title="Delete ${getAcademicPeriodLabel(row)}" onclick="academicPeriodCRUD.delete('${row.id}', '${getAcademicPeriodLabel(row)}')">
+                            <button class="btn btn-sm btn-outline-danger" title="Delete building: ${row.name}" onclick="buildingCRUD.delete('${row.id}', '${row.name}')">
                                 ${deleteIcon}
                             </button>
                         `;
@@ -160,45 +136,17 @@ export default function AcademicPeriod() {
         });
 
         tableRef.current = table;
-        window.academicPeriodCRUD = window.academicPeriodCRUD || {};
+        window.buildingCRUD = window.buildingCRUD || {};
 
-        window.academicPeriodCRUD.edit = (id) => {
+        window.buildingCRUD.edit = (id) => {
             setEditId(id);
-            $('#academicPeriodOffcanvas').offcanvas('show');
+            $('#buildingOffcanvas').offcanvas('show');
         };
 
-        window.academicPeriodCRUD.setCurrent = (id, label) => {
+        window.buildingCRUD.delete = (id, name) => {
             Swal.fire({
-                title: 'Set Current Academic Period',
-                text: `Are you sure you want to make "${label}" the current academic period?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, set it',
-                cancelButtonText: 'Cancel',
-                customClass: {
-                    confirmButton: 'btn btn-primary me-3',
-                    cancelButton: 'btn btn-label-secondary',
-                },
-                buttonsStyling: false,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post(route('admin.utilities.academic-periods.set-current', id))
-                        .done((res) => {
-                            toastr.success(res.message || 'Academic period updated successfully.');
-                            tableRef.current?.ajax.reload(null, false);
-                            loadStats();
-                        })
-                        .fail(() => {
-                            toastr.error('Failed to set current academic period.');
-                        });
-                }
-            });
-        };
-
-        window.academicPeriodCRUD.delete = (id, label) => {
-            Swal.fire({
-                title: 'Delete Academic Period',
-                text: `Are you sure you want to delete "${label}"? This action cannot be undone.`,
+                title: 'Delete Building',
+                text: `Are you sure you want to delete "${name}"?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete',
@@ -211,16 +159,17 @@ export default function AcademicPeriod() {
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: route('admin.utilities.academic-periods.delete', id),
+                        url: route('admin.core.buildings.delete', id),
                         type: 'DELETE',
                     })
                         .done((res) => {
-                            toastr.success(res.message || 'Academic period deleted successfully.');
+                            toastr.success(res.message || 'Building deleted successfully.');
                             tableRef.current?.ajax.reload(null, false);
                             loadStats();
                         })
-                        .fail(() => {
-                            toastr.error('Failed to delete academic period.');
+                        .fail((xhr) => {
+                            const message = xhr.responseJSON?.message || 'Failed to delete building.';
+                            toastr.error(message);
                         });
                 }
             });
@@ -228,7 +177,7 @@ export default function AcademicPeriod() {
 
         return () => {
             table.destroy();
-            delete window.academicPeriodCRUD;
+            delete window.buildingCRUD;
         };
     }, []);
 
@@ -244,23 +193,23 @@ export default function AcademicPeriod() {
 
     return (
         <>
-            <Head title="Utilities > Academic Period" />
+            <Head title="Core > Building" />
 
-            <Base title="Utilities > Academic Period">
+            <Base title="Core > Building">
                 <div className="row mb-4">
                     <StatsCard
                         id="total"
-                        title="Total Academic Periods"
-                        Icon={LuCalendarDays}
+                        title="Total Buildings"
+                        Icon={LuBuilding2}
                         iconSize="28"
                         bgColor="bg-primary"
                         className="col-md-6"
                     />
 
                     <StatsCard
-                        id="current"
-                        title="Current Academic Period"
-                        Icon={LuSchool}
+                        id="branches-covered"
+                        title="Branches Covered"
+                        Icon={LuUniversity}
                         iconSize="28"
                         bgColor="bg-success"
                         className="col-md-6"
@@ -269,17 +218,18 @@ export default function AcademicPeriod() {
 
                 <div className="card">
                     <div className="card-datatable text-nowrap">
-                        <ScrollableTable id="academic-period-table">
+                        <ScrollableTable id="building-table">
                             <th>Id</th>
-                            <th>Academic Year</th>
-                            <th>Semester</th>
-                            <th>Current</th>
+                            <th>Name</th>
+                            <th>Code</th>
+                            <th>Branch</th>
+                            <th>Rooms</th>
                             <th>Actions</th>
                         </ScrollableTable>
                     </div>
                 </div>
 
-                <CreateAndEditAcademicPeriod editId={editId} onSuccess={handleSuccess} />
+                <CreateAndEditBuilding editId={editId} branches={branches} onSuccess={handleSuccess} />
             </Base>
         </>
     );

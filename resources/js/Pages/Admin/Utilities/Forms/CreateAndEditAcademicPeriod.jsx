@@ -2,11 +2,18 @@ import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import OffcanvasForm from '@/Components/Form/OffcanvasForm';
 import InputField from '@/Components/Input/InputField';
+import SelectField from '@/Components/Input/SelectField';
+
+const semesterOptions = [
+    { id: '1ST', name: '1st Semester' },
+    { id: '2ND', name: '2nd Semester' },
+    { id: 'SUMMER', name: 'Summer' },
+];
 
 const initialValues = {
     year_start: '',
     year_end: '',
-    semester: '1ST',
+    semester: '',
 };
 
 export default function CreateAndEditAcademicPeriod({ editId, onSuccess }) {
@@ -25,7 +32,7 @@ export default function CreateAndEditAcademicPeriod({ editId, onSuccess }) {
                 setData({
                     year_start: academicPeriod.year_start?.toString() ?? '',
                     year_end: academicPeriod.year_end?.toString() ?? '',
-                    semester: academicPeriod.semester ?? '1ST',
+                    semester: academicPeriod.semester ?? '',
                 });
             })
             .fail(() => {
@@ -103,26 +110,17 @@ export default function CreateAndEditAcademicPeriod({ editId, onSuccess }) {
                 error={errors.year_end}
             />
 
-            <div className="mb-3">
-                <label className="form-label" htmlFor="academic-period-semester">Semester</label>
-                <div className={`input-group ${errors.semester ? 'has-validation' : 'input-group-merge mb-2'}`}>
-                    <span className={`input-group-text ${errors.semester ? 'border-danger' : ''}`}>
-                        <i className="bx bx-book-open"></i>
-                    </span>
-                    <select
-                        id="academic-period-semester"
-                        name="semester"
-                        className={`form-select ${errors.semester ? 'is-invalid' : ''}`}
-                        value={data.semester}
-                        onChange={(e) => setData('semester', e.target.value)}
-                    >
-                        <option value="1ST">1st Semester</option>
-                        <option value="2ND">2nd Semester</option>
-                        <option value="SUMMER">Summer</option>
-                    </select>
-                    {errors.semester && <div className="invalid-feedback">{errors.semester}</div>}
-                </div>
-            </div>
+            <SelectField
+                id="academic-period-semester"
+                label="Semester"
+                name="semester"
+                placeholder="Select a semester"
+                value={data.semester}
+                onChange={(val) => setData('semester', val)}
+                options={semesterOptions}
+                dropdownParent="#academicPeriodOffcanvas"
+                error={errors.semester}
+            />
         </OffcanvasForm>
     );
 }

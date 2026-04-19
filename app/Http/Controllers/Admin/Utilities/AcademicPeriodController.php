@@ -27,7 +27,7 @@ class AcademicPeriodController extends Controller
 
     public function getData()
     {
-        $academic_periods = AcademicPeriod::select(['id', 'academic_year', 'semester', 'is_current']);
+        $academic_periods = AcademicPeriod::select(['id', 'academic_year', 'semester', 'is_current'])->latestFirst();
 
         return DataTables::of($academic_periods)
             ->editColumn('id', function ($row) {
@@ -68,10 +68,17 @@ class AcademicPeriodController extends Controller
         $payload = $this->validateAcademicPeriod($request);
 
         DB::transaction(function () use ($payload) {
-            AcademicPeriod::create([
+            $current = AcademicPeriod::where('is_current', true)->first();
+
+            $newPeriod = AcademicPeriod::create([
                 ...$payload,
-                'is_current' => !AcademicPeriod::where('is_current', true)->exists(),
+                'is_current' => false,
             ]);
+
+            if (!$current || $this->isNewerThan($newPeriod, $current)) {
+                AcademicPeriod::query()->update(['is_current' => false]);
+                $newPeriod->update(['is_current' => true]);
+            }
         });
 
         return redirect()->back()->with('success', 'Academic Period created successfully.');
@@ -190,6 +197,16 @@ class AcademicPeriodController extends Controller
         $decrypted = Crypt::decryptString($id);
 
         return AcademicPeriod::findOrFail($decrypted);
+    }
+
+    private function isNewerThan(AcademicPeriod $a, AcademicPeriod $b): bool
+    {
+        if ($a->year_start !== $b->year_start) {
+            return $a->year_start > $b->year_start;
+        }
+
+        $semesterOrder = ['1ST' => 1, '2ND' => 2, 'SUMMER' => 3];
+        return ($semesterOrder[$a->semester] ?? 0) > ($semesterOrder[$b->semester] ?? 0);
     }
 
     private function promoteLatestAcademicPeriod(): void

@@ -1,31 +1,22 @@
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
-import CreateAndEditAcademicPeriod from "./Forms/CreateAndEditAcademicPeriod";
-import { LuCalendarDays, LuSchool } from "react-icons/lu";
-import { BiSolidEdit, BiSolidStar, BiStar, BiSolidTrash } from "react-icons/bi";
+import CreateAndEditRoom from "./Forms/CreateAndEditRoom";
+import { LuDoorOpen, LuBuilding2 } from "react-icons/lu";
+import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
-const semesterLabels = {
-    '1ST': '1st Semester',
-    '2ND': '2nd Semester',
-    'SUMMER': 'Summer',
-};
-
-const getSemesterLabel = (semester) => semesterLabels[semester] ?? semester;
-
-const getAcademicPeriodLabel = (row) => `A.Y. ${row.academic_year} - ${getSemesterLabel(row.semester)}`;
-
-export default function AcademicPeriod() {
+export default function Room() {
+    const { buildings = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
-        $.get(route('admin.utilities.academic-periods.stats')).done((stats) => {
+        $.get(route('admin.core.rooms.stats')).done((stats) => {
             $('#total').text(stats.total);
-            $('#current').text(stats.current ?? 'None');
+            $('#buildings-covered').text(stats.buildings_covered);
         });
     };
 
@@ -34,12 +25,11 @@ export default function AcademicPeriod() {
 
         const heading = document.createElement("h5");
         heading.classList.add("card-title", "mb-0", "text-md-start", "text-center", "pb-md-0", "pb-6");
-        heading.innerHTML = "Academic Periods";
+        heading.innerHTML = "Rooms";
 
-        const table = window.$('#academic-period-table').DataTable({
+        const table = window.$('#room-table').DataTable({
             processing: true,
             serverSide: true,
-            order: [],
             responsive: true,
             scrollY: "405px",
             scrollX: true,
@@ -76,7 +66,7 @@ export default function AcademicPeriod() {
                             className: "create-new btn btn-primary",
                             action: function () {
                                 setEditId(null);
-                                $('#academicPeriodOffcanvas').offcanvas('show');
+                                $('#roomOffcanvas').offcanvas('show');
                             }
                         }]
                     }]
@@ -103,54 +93,41 @@ export default function AcademicPeriod() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.utilities.academic-periods.data'),
+            ajax: route('admin.core.rooms.data'),
             columns: [
                 { data: "id", visible: false },
+                { data: "code", width: "25%" },
                 {
-                    data: "academic_year",
-                    width: "26%",
-                    render: (data) => `A.Y. ${data}`,
-                },
-                {
-                    data: "semester",
-                    width: "24%",
-                    render: (data) => getSemesterLabel(data),
-                },
-                {
-                    data: "is_current",
-                    width: "18%",
+                    data: "type",
+                    width: "25%",
                     render: (data) => {
-                        const badge = data ? 'success' : 'secondary';
-                        const label = data ? 'Current' : 'Not Current';
-
-                        return `<span class="badge bg-label-${badge}">${label}</span>`;
+                        return `<span class="badge bg-label-primary">${data}</span>`;
                     }
+                },
+                {
+                    data: "building_name",
+                    width: "35%",
+                    render: (data, type, row) => `
+                        <div class="d-flex flex-column">
+                            <span class="fw-medium">${data ?? '-'}</span>
+                            <small class="text-muted">${row.building_code ?? ''}</small>
+                        </div>
+                    `,
                 },
                 {
                     data: null,
                     orderable: false,
-                    width: "32%",
+                    width: "15%",
                     render: (data, type, row) => {
-                        const setCurrentIcon = row.is_current
-                            ? renderToString(<BiSolidStar size={16} />)
-                            : renderToString(<BiStar size={16} />);
                         const editIcon = renderToString(<BiSolidEdit size={16} />);
                         const deleteIcon = renderToString(<BiSolidTrash size={16} />);
-                        const currentButtonClass = row.is_current ? 'btn-outline-secondary disabled' : 'btn-outline-primary';
-                        const currentButtonAction = row.is_current
-                            ? ''
-                            : `onclick="academicPeriodCRUD.setCurrent('${row.id}', '${getAcademicPeriodLabel(row)}')"`;
 
                         return `
-                            <button class="btn btn-sm ${currentButtonClass}" title="${row.is_current ? 'Already current' : 'Set as current academic period'}" ${row.is_current ? 'disabled' : ''} ${currentButtonAction}>
-                                ${setCurrentIcon}
-                            </button>
-
-                            <button class="btn btn-sm btn-outline-warning mx-1" title="Edit ${getAcademicPeriodLabel(row)}" onclick="academicPeriodCRUD.edit('${row.id}')">
+                            <button class="btn btn-sm btn-outline-warning me-1" title="Edit room: ${row.code}" onclick="roomCRUD.edit('${row.id}')">
                                 ${editIcon}
                             </button>
 
-                            <button class="btn btn-sm btn-outline-danger" title="Delete ${getAcademicPeriodLabel(row)}" onclick="academicPeriodCRUD.delete('${row.id}', '${getAcademicPeriodLabel(row)}')">
+                            <button class="btn btn-sm btn-outline-danger" title="Delete room: ${row.code}" onclick="roomCRUD.delete('${row.id}', '${row.code}')">
                                 ${deleteIcon}
                             </button>
                         `;
@@ -160,45 +137,17 @@ export default function AcademicPeriod() {
         });
 
         tableRef.current = table;
-        window.academicPeriodCRUD = window.academicPeriodCRUD || {};
+        window.roomCRUD = window.roomCRUD || {};
 
-        window.academicPeriodCRUD.edit = (id) => {
+        window.roomCRUD.edit = (id) => {
             setEditId(id);
-            $('#academicPeriodOffcanvas').offcanvas('show');
+            $('#roomOffcanvas').offcanvas('show');
         };
 
-        window.academicPeriodCRUD.setCurrent = (id, label) => {
+        window.roomCRUD.delete = (id, code) => {
             Swal.fire({
-                title: 'Set Current Academic Period',
-                text: `Are you sure you want to make "${label}" the current academic period?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, set it',
-                cancelButtonText: 'Cancel',
-                customClass: {
-                    confirmButton: 'btn btn-primary me-3',
-                    cancelButton: 'btn btn-label-secondary',
-                },
-                buttonsStyling: false,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post(route('admin.utilities.academic-periods.set-current', id))
-                        .done((res) => {
-                            toastr.success(res.message || 'Academic period updated successfully.');
-                            tableRef.current?.ajax.reload(null, false);
-                            loadStats();
-                        })
-                        .fail(() => {
-                            toastr.error('Failed to set current academic period.');
-                        });
-                }
-            });
-        };
-
-        window.academicPeriodCRUD.delete = (id, label) => {
-            Swal.fire({
-                title: 'Delete Academic Period',
-                text: `Are you sure you want to delete "${label}"? This action cannot be undone.`,
+                title: 'Delete Room',
+                text: `Are you sure you want to delete room "${code}"?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete',
@@ -211,16 +160,17 @@ export default function AcademicPeriod() {
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: route('admin.utilities.academic-periods.delete', id),
+                        url: route('admin.core.rooms.delete', id),
                         type: 'DELETE',
                     })
                         .done((res) => {
-                            toastr.success(res.message || 'Academic period deleted successfully.');
+                            toastr.success(res.message || 'Room deleted successfully.');
                             tableRef.current?.ajax.reload(null, false);
                             loadStats();
                         })
-                        .fail(() => {
-                            toastr.error('Failed to delete academic period.');
+                        .fail((xhr) => {
+                            const message = xhr.responseJSON?.message || 'Failed to delete room.';
+                            toastr.error(message);
                         });
                 }
             });
@@ -228,7 +178,7 @@ export default function AcademicPeriod() {
 
         return () => {
             table.destroy();
-            delete window.academicPeriodCRUD;
+            delete window.roomCRUD;
         };
     }, []);
 
@@ -244,23 +194,23 @@ export default function AcademicPeriod() {
 
     return (
         <>
-            <Head title="Utilities > Academic Period" />
+            <Head title="Core > Room" />
 
-            <Base title="Utilities > Academic Period">
+            <Base title="Core > Room">
                 <div className="row mb-4">
                     <StatsCard
                         id="total"
-                        title="Total Academic Periods"
-                        Icon={LuCalendarDays}
+                        title="Total Rooms"
+                        Icon={LuDoorOpen}
                         iconSize="28"
                         bgColor="bg-primary"
                         className="col-md-6"
                     />
 
                     <StatsCard
-                        id="current"
-                        title="Current Academic Period"
-                        Icon={LuSchool}
+                        id="buildings-covered"
+                        title="Buildings Covered"
+                        Icon={LuBuilding2}
                         iconSize="28"
                         bgColor="bg-success"
                         className="col-md-6"
@@ -269,17 +219,17 @@ export default function AcademicPeriod() {
 
                 <div className="card">
                     <div className="card-datatable text-nowrap">
-                        <ScrollableTable id="academic-period-table">
+                        <ScrollableTable id="room-table">
                             <th>Id</th>
-                            <th>Academic Year</th>
-                            <th>Semester</th>
-                            <th>Current</th>
+                            <th>Code</th>
+                            <th>Type</th>
+                            <th>Building</th>
                             <th>Actions</th>
                         </ScrollableTable>
                     </div>
                 </div>
 
-                <CreateAndEditAcademicPeriod editId={editId} onSuccess={handleSuccess} />
+                <CreateAndEditRoom editId={editId} buildings={buildings} onSuccess={handleSuccess} />
             </Base>
         </>
     );

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\Utilities\AcademicPeriodController;
 use App\Http\Controllers\Admin\Utilities\BranchController;
 use App\Http\Controllers\Admin\Utilities\DepartmentController;
 use App\Http\Controllers\Admin\Utilities\ProgramController;
+use App\Http\Controllers\Admin\Core\BuildingController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\UserManagement\AdminController;
 use App\Http\Controllers\Admin\UserManagement\OfficerController;
@@ -82,6 +83,38 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
         Route::get('stats/{user_type}', [UserController::class, 'getStats'])->name('stats');
         Route::post('toggle-status/{id}', [UserController::class, 'toggle'])->middleware(PreventSelfAction::class)->name('toggle');
         Route::delete('delete/{id}', [UserController::class, 'destroy'])->middleware(PreventSelfAction::class)->name('delete');
+    });
+
+    Route::prefix('core')->name('core.')->group(function () {
+        Route::prefix('buildings')->name('buildings.')->group(function () {
+            Route::get('/', [BuildingController::class, 'index'])->name('index');
+            Route::get('data', [BuildingController::class, 'getData'])->name('data');
+            Route::get('stats', [BuildingController::class, 'getStats'])->name('stats');
+            Route::post('store', [BuildingController::class, 'store'])->name('store');
+            Route::get('{id}', [BuildingController::class, 'show'])->name('show');
+            Route::put('{id}', [BuildingController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [BuildingController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('rooms')->name('rooms.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\Core\RoomController::class, 'index'])->name('index');
+            Route::get('data', [\App\Http\Controllers\Admin\Core\RoomController::class, 'getData'])->name('data');
+            Route::get('stats', [\App\Http\Controllers\Admin\Core\RoomController::class, 'getStats'])->name('stats');
+            Route::post('store', [\App\Http\Controllers\Admin\Core\RoomController::class, 'store'])->name('store');
+            Route::get('{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'show'])->name('show');
+            Route::put('{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('subjects')->name('subjects.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'index'])->name('index');
+            Route::get('data', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'getData'])->name('data');
+            Route::get('stats', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'getStats'])->name('stats');
+            Route::post('store', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'store'])->name('store');
+            Route::get('{id}', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'show'])->name('show');
+            Route::put('{id}', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'destroy'])->name('delete');
+        });
     });
 
     Route::prefix('utilities')->name('utilities.')->group(function () {
