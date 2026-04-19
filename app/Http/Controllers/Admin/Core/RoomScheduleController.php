@@ -285,6 +285,9 @@ class RoomScheduleController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $this->validateTimeWindow($validated['start_time'], 'start_time');
+        $this->validateTimeWindow($validated['end_time'], 'end_time');
+
         $conflict = RoomSchedule::query()
             ->with(['subject:id,name,code', 'room:id,code'])
             ->where('academic_period_id', $validated['academic_period_id'])
@@ -301,7 +304,7 @@ class RoomScheduleController extends Controller
             $subjectLabel = trim(($conflict->subject?->code ?? '') . ' ' . ($conflict->section ?? ''));
 
             throw ValidationException::withMessages([
-                'room_id' => ['The selected room is already booked on ' . $dayLabel . ' at ' . $timeLabel . ' for ' . $subjectLabel . '.'],
+                'room_id' => ['The selected room is already taken on ' . $dayLabel . ' at ' . $timeLabel . ' for ' . $subjectLabel . '.'],
             ]);
         }
 
@@ -349,5 +352,18 @@ class RoomScheduleController extends Controller
         $format = strlen($time) === 5 ? 'H:i' : 'H:i:s';
 
         return Carbon::createFromFormat($format, $time);
+    }
+
+    private function validateTimeWindow(string $value, string $field): void
+    {
+        $time = $this->parseTime($value);
+        $minTime = Carbon::createFromFormat('H:i', '07:30');
+        $maxTime = Carbon::createFromFormat('H:i', '20:30');
+
+        if ($time->lt($minTime) || $time->gt($maxTime)) {
+            throw ValidationException::withMessages([
+                $field => ['Schedule times must be between 7:30 AM and 8:30 PM.'],
+            ]);
+        }
     }
 }

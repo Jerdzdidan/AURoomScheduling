@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import OffcanvasForm from "@/Components/Form/OffcanvasForm";
 import InputField from "@/Components/Input/InputField";
 import SelectField from "@/Components/Input/SelectField";
+import TimeSelectField from "@/Components/Input/TimeSelectField";
 
 const getInitialValues = (currentAcademicPeriodId) => ({
     academic_period_id: currentAcademicPeriodId?.toString() ?? "",
@@ -290,28 +291,30 @@ export default function CreateAndEditRoomSchedule({
 
             <div className="row">
                 <div className="col-md-6">
-                    <InputField
+                    <TimeSelectField
                         id="schedule-start-time"
                         label="Start Time"
-                        type="time"
                         name="start_time"
-                        icon="bx bx-time-five"
                         value={data.start_time}
-                        onChange={(e) => setData("start_time", e.target.value)}
+                        onChange={(val) => setData("start_time", val)}
                         error={errors.start_time}
+                        minTime="07:30"
+                        maxTime="20:30"
+                        help="Allowed schedule window is 7:30 AM to 8:30 PM."
                     />
                 </div>
 
                 <div className="col-md-6">
-                    <InputField
+                    <TimeSelectField
                         id="schedule-end-time"
                         label="End Time"
-                        type="time"
                         name="end_time"
-                        icon="bx bx-timer"
                         value={data.end_time}
-                        onChange={(e) => setData("end_time", e.target.value)}
+                        onChange={(val) => setData("end_time", val)}
                         error={errors.end_time}
+                        minTime="07:30"
+                        maxTime="20:30"
+                        help="Allowed schedule window is 7:30 AM to 8:30 PM."
                     />
                 </div>
             </div>

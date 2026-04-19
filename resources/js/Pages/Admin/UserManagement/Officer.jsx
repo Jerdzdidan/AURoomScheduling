@@ -119,7 +119,7 @@ export default function Officer() {
                     render: (data, type, row) => data && data !== '-'
                         ? `
                             <div class="d-flex flex-column">
-                                <span class="badge bg-label-primary align-self-start">${data}</span>
+                                <span class="fw-medium">${data ?? '-'}</span>
                                 <small class="text-muted mt-1">${row.department_code ?? ''}</small>
                                 <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
                             </div>

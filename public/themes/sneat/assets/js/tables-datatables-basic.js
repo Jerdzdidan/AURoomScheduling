@@ -74,15 +74,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
                 e.element.parentElement.classList.contains("input-group") && e.element.parentElement.insertAdjacentElement("afterend", e.messageElement)
             })
         }
-    }),
-    (t = document.querySelector('[name="basicDate"]')) && t.flatpickr({
-        enableTime: !1,
-        monthSelectorType: "static",
-        static: !0,
-        dateFormat: "m/d/Y",
-        onChange: function() {
-            fv.revalidateField("basicDate")
-        }
     });
     var r, t = document.querySelector(".datatables-basic");
     let o;

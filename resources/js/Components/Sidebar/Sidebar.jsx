@@ -53,11 +53,11 @@ function Admin() {
                 name="Room"
             />
 
-            <SidebarItem
-                routeName="_"
-                Icon={LuUsers}
-                name="Professor"
-            />
+            {/* <SidebarItem */}
+            {/*     routeName="_" */}
+            {/*     Icon={LuUsers} */}
+            {/*     name="Professor" */}
+            {/* /> */}
 
             <SidebarItem
                 routeName="admin.core.subjects.index"

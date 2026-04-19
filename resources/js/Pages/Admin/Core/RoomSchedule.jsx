@@ -126,6 +126,12 @@ export default function RoomSchedule() {
                 },
             },
             autoWidth: false,
+            order: [
+                [1, "desc"],
+                [2, "asc"],
+                [3, "asc"],
+                [4, "asc"],
+            ],
             ajax: route("admin.core.room-schedules.data"),
             columns: [
                 { data: "id", visible: false },

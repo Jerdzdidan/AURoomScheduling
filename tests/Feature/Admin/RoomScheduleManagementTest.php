@@ -283,3 +283,27 @@ test('room schedule creation validates that the subject belongs to the selected 
     $response->assertRedirect(route('admin.core.room-schedules.index'));
     $response->assertSessionHasErrors(['subject_id']);
 });
+
+test('room schedule creation validates allowed schedule hours', function () {
+    $deps = createScheduleDependencies();
+
+    $response = $this
+        ->from(route('admin.core.room-schedules.index'))
+        ->post(route('admin.core.room-schedules.store'), [
+            'academic_period_id' => $deps['academicPeriod']->id,
+            'branch_id' => $deps['branch']->id,
+            'department_id' => $deps['department']->id,
+            'program_id' => $deps['program']->id,
+            'subject_id' => $deps['subject']->id,
+            'room_id' => $deps['room']->id,
+            'section' => 'BSIT-1A',
+            'day_of_week' => 'MONDAY',
+            'start_time' => '07:00',
+            'end_time' => '08:00',
+            'professor_name' => 'Prof. Maria Santos',
+            'notes' => '',
+        ]);
+
+    $response->assertRedirect(route('admin.core.room-schedules.index'));
+    $response->assertSessionHasErrors(['start_time']);
+});
