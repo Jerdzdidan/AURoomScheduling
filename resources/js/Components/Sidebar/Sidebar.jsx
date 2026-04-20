@@ -25,7 +25,7 @@ function Admin() {
             {/*     /> */}
             {/* ))} */}
 
-            <div className="mt-2">
+            <div className="mt-1">
 
             </div>
 
@@ -43,18 +43,6 @@ function Admin() {
                 routeName="admin.core.room-schedules.index"
                 Icon={LuCalendarRange}
                 name="Room Schedule"
-            />
-
-            <SidebarItem
-                routeName="admin.core.buildings.index"
-                Icon={LuBuilding2}
-                name="Building"
-            />
-
-            <SidebarItem
-                routeName="admin.core.rooms.index"
-                Icon={LuDoorOpen}
-                name="Room"
             />
 
             {/* <SidebarItem */}
@@ -105,6 +93,18 @@ function Admin() {
                 routeName="admin.utilities.departments.index"
                 Icon={LuLayoutList}
                 name="Departments"
+            />
+
+            <SidebarItem
+                routeName="admin.core.buildings.index"
+                Icon={LuBuilding2}
+                name="Building"
+            />
+
+            <SidebarItem
+                routeName="admin.core.rooms.index"
+                Icon={LuDoorOpen}
+                name="Room"
             />
 
             <SidebarItem

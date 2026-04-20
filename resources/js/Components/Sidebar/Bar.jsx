@@ -15,7 +15,7 @@ export default function Bar({ children }) {
                     <span className="app-brand-text demo menu-text fw-bold ms-4 text-white">AU-RS</span>
                 </Link>
             </div>
-            {/* <div className="menu-divider mt-0"></div> */}
+            <div className="menu-divider mt-3"></div>
             <div className="menu-inner-shadow"></div>
             <ul className="menu-inner py-1">
                 {children}

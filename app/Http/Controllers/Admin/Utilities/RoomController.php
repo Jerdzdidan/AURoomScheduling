@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Core;
+namespace App\Http\Controllers\Admin\Utilities;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
@@ -16,7 +16,7 @@ class RoomController extends Controller
 {
     public function index()
     {
-        return inertia('Admin/Core/Room', [
+        return inertia('Admin/Utilities/Room', [
             'branches' => Branch::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
@@ -141,7 +141,7 @@ class RoomController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('rooms', 'code')
-                    ->where(fn ($query) => $query->where('building_id', $request->input('building_id')))
+                    ->where(fn($query) => $query->where('building_id', $request->input('building_id')))
                     ->ignore($room?->id),
             ],
             'type' => ['required', 'string', 'max:255'],
@@ -149,7 +149,7 @@ class RoomController extends Controller
                 'required',
                 'integer',
                 Rule::exists('buildings', 'id')
-                    ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id'))),
+                    ->where(fn($query) => $query->where('branch_id', $request->input('branch_id'))),
             ],
         ]);
     }

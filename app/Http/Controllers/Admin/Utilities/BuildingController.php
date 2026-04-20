@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Core;
+namespace App\Http\Controllers\Admin\Utilities;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
@@ -15,7 +15,7 @@ class BuildingController extends Controller
 {
     public function index()
     {
-        return inertia('Admin/Core/Building', [
+        return inertia('Admin/Utilities/Building', [
             'branches' => Branch::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
@@ -125,7 +125,7 @@ class BuildingController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('buildings', 'name')
-                    ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id')))
+                    ->where(fn($query) => $query->where('branch_id', $request->input('branch_id')))
                     ->ignore($building?->id),
             ],
             'code' => [
@@ -133,7 +133,7 @@ class BuildingController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('buildings', 'code')
-                    ->where(fn ($query) => $query->where('branch_id', $request->input('branch_id')))
+                    ->where(fn($query) => $query->where('branch_id', $request->input('branch_id')))
                     ->ignore($building?->id),
             ],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],

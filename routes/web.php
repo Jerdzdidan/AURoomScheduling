@@ -4,11 +4,13 @@ use App\Http\Controllers\Admin\Utilities\AcademicPeriodController;
 use App\Http\Controllers\Admin\Utilities\BranchController;
 use App\Http\Controllers\Admin\Utilities\DepartmentController;
 use App\Http\Controllers\Admin\Utilities\ProgramController;
-use App\Http\Controllers\Admin\Core\BuildingController;
+use App\Http\Controllers\Admin\Utilities\BuildingController;
 use App\Http\Controllers\Admin\Core\RoomScheduleController;
+use App\Http\Controllers\Admin\Core\SubjectController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\UserManagement\AdminController;
 use App\Http\Controllers\Admin\UserManagement\OfficerController;
+use App\Http\Controllers\Admin\Utilities\RoomController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\PreventSelfAction;
@@ -98,13 +100,13 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
         });
 
         Route::prefix('rooms')->name('rooms.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\Core\RoomController::class, 'index'])->name('index');
-            Route::get('data', [\App\Http\Controllers\Admin\Core\RoomController::class, 'getData'])->name('data');
-            Route::get('stats', [\App\Http\Controllers\Admin\Core\RoomController::class, 'getStats'])->name('stats');
-            Route::post('store', [\App\Http\Controllers\Admin\Core\RoomController::class, 'store'])->name('store');
-            Route::get('{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'show'])->name('show');
-            Route::put('{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'update'])->name('update');
-            Route::delete('delete/{id}', [\App\Http\Controllers\Admin\Core\RoomController::class, 'destroy'])->name('delete');
+            Route::get('/', [RoomController::class, 'index'])->name('index');
+            Route::get('data', [RoomController::class, 'getData'])->name('data');
+            Route::get('stats', [RoomController::class, 'getStats'])->name('stats');
+            Route::post('store', [RoomController::class, 'store'])->name('store');
+            Route::get('{id}', [RoomController::class, 'show'])->name('show');
+            Route::put('{id}', [RoomController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [RoomController::class, 'destroy'])->name('delete');
         });
 
         Route::prefix('room-schedules')->name('room-schedules.')->group(function () {
@@ -118,13 +120,13 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
         });
 
         Route::prefix('subjects')->name('subjects.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'index'])->name('index');
-            Route::get('data', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'getData'])->name('data');
-            Route::get('stats', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'getStats'])->name('stats');
-            Route::post('store', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'store'])->name('store');
-            Route::get('{id}', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'show'])->name('show');
-            Route::put('{id}', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'update'])->name('update');
-            Route::delete('delete/{id}', [\App\Http\Controllers\Admin\Core\SubjectController::class, 'destroy'])->name('delete');
+            Route::get('/', [SubjectController::class, 'index'])->name('index');
+            Route::get('data', [SubjectController::class, 'getData'])->name('data');
+            Route::get('stats', [SubjectController::class, 'getStats'])->name('stats');
+            Route::post('store', [SubjectController::class, 'store'])->name('store');
+            Route::get('{id}', [SubjectController::class, 'show'])->name('show');
+            Route::put('{id}', [SubjectController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [SubjectController::class, 'destroy'])->name('delete');
         });
     });
 

@@ -1,18 +1,26 @@
 /* ── Sidebar Overrides ───────────────────────────────────────── */
 
 /* Active menu item – danger-colored background */
-.layout-menu.bg-primary .menu-inner > .menu-item.active > .menu-link:not(.menu-toggle) {
+.layout-menu.bg-primary
+    .menu-inner
+    > .menu-item.active
+    > .menu-link:not(.menu-toggle) {
     background-color: var(--bs-danger) !important;
     color: #fff !important;
 }
 
 /* Active indicator bar on the right edge */
-.layout-wrapper:not(.layout-horizontal) .layout-menu.bg-primary .menu-inner > .menu-item.active::before {
+.layout-wrapper:not(.layout-horizontal)
+    .layout-menu.bg-primary
+    .menu-inner
+    > .menu-item.active::before {
     background-color: var(--bs-danger) !important;
 }
 
 /* Active sub-bullet dot */
-.layout-menu.bg-primary .menu-item.active:not(.open) > .menu-link:not(.menu-toggle)::before {
+.layout-menu.bg-primary
+    .menu-item.active:not(.open)
+    > .menu-link:not(.menu-toggle)::before {
     background-color: var(--bs-danger) !important;
     box-shadow: 0 0 0 3px rgba(var(--bs-danger-rgb), 0.25) !important;
 }
@@ -45,4 +53,10 @@
 /* Section header divider line */
 .layout-menu.bg-primary .menu-header::before {
     background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.layout-menu.bg-primary .menu-divider {
+    color: rgba(255, 255, 255, 0.55) !important;
+    background-color: rgba(255, 255, 255, 0.55) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
 }
