@@ -31,7 +31,7 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
             return;
         }
 
-        $.get(route('admin.core.rooms.show', editId))
+        $.get(route('admin.utilities.rooms.show', editId))
             .done((room) => {
                 const parts = room.code ? room.code.split('-') : [];
                 const roomNumber = parts.length > 0 ? parts[parts.length - 1] : '';
@@ -110,11 +110,11 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
         };
 
         if (isEditing) {
-            put(route('admin.core.rooms.update', editId), options);
+            put(route('admin.utilities.rooms.update', editId), options);
             return;
         }
 
-        post(route('admin.core.rooms.store'), options);
+        post(route('admin.utilities.rooms.store'), options);
     };
 
     return (

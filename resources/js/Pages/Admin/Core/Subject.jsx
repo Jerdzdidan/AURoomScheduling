@@ -96,8 +96,8 @@ export default function Subject() {
             ajax: route('admin.core.subjects.data'),
             columns: [
                 { data: "id", visible: false },
-                { data: "name", width: "35%" },
-                { data: "code", width: "15%" },
+                { data: "name", width: "30%" },
+                { data: "code", width: "20%" },
                 {
                     data: "program_name",
                     width: "35%",

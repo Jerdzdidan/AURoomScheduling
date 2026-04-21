@@ -14,7 +14,7 @@ export default function Room() {
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
-        $.get(route('admin.core.rooms.stats')).done((stats) => {
+        $.get(route('admin.utilities.rooms.stats')).done((stats) => {
             $('#total').text(stats.total);
             $('#buildings-covered').text(stats.buildings_covered);
         });
@@ -93,7 +93,7 @@ export default function Room() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.core.rooms.data'),
+            ajax: route('admin.utilities.rooms.data'),
             columns: [
                 { data: "id", visible: false },
                 { data: "code", width: "25%" },
@@ -161,7 +161,7 @@ export default function Room() {
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: route('admin.core.rooms.delete', id),
+                        url: route('admin.utilities.rooms.delete', id),
                         type: 'DELETE',
                     })
                         .done((res) => {

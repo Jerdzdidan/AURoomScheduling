@@ -21,7 +21,7 @@ export default function CreateAndEditBuilding({ editId, branches, onSuccess }) {
             return;
         }
 
-        $.get(route('admin.core.buildings.show', editId))
+        $.get(route('admin.utilities.buildings.show', editId))
             .done((building) => {
                 setData({
                     name: building.name ?? '',
@@ -65,11 +65,11 @@ export default function CreateAndEditBuilding({ editId, branches, onSuccess }) {
         };
 
         if (isEditing) {
-            put(route('admin.core.buildings.update', editId), options);
+            put(route('admin.utilities.buildings.update', editId), options);
             return;
         }
 
-        post(route('admin.core.buildings.store'), options);
+        post(route('admin.utilities.buildings.store'), options);
     };
 
     return (

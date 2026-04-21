@@ -96,13 +96,13 @@ function Admin() {
             />
 
             <SidebarItem
-                routeName="admin.core.buildings.index"
+                routeName="admin.utilities.buildings.index"
                 Icon={LuBuilding2}
                 name="Building"
             />
 
             <SidebarItem
-                routeName="admin.core.rooms.index"
+                routeName="admin.utilities.rooms.index"
                 Icon={LuDoorOpen}
                 name="Room"
             />

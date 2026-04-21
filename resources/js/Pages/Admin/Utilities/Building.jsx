@@ -14,7 +14,7 @@ export default function Building() {
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
-        $.get(route('admin.core.buildings.stats')).done((stats) => {
+        $.get(route('admin.utilities.buildings.stats')).done((stats) => {
             $('#total').text(stats.total);
             $('#branches-covered').text(stats.branches_covered);
         });
@@ -93,7 +93,7 @@ export default function Building() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.core.buildings.data'),
+            ajax: route('admin.utilities.buildings.data'),
             columns: [
                 { data: "id", visible: false },
                 { data: "name", width: "30%" },
@@ -159,7 +159,7 @@ export default function Building() {
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: route('admin.core.buildings.delete', id),
+                        url: route('admin.utilities.buildings.delete', id),
                         type: 'DELETE',
                     })
                         .done((res) => {

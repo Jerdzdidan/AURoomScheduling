@@ -89,26 +89,6 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     });
 
     Route::prefix('core')->name('core.')->group(function () {
-        Route::prefix('buildings')->name('buildings.')->group(function () {
-            Route::get('/', [BuildingController::class, 'index'])->name('index');
-            Route::get('data', [BuildingController::class, 'getData'])->name('data');
-            Route::get('stats', [BuildingController::class, 'getStats'])->name('stats');
-            Route::post('store', [BuildingController::class, 'store'])->name('store');
-            Route::get('{id}', [BuildingController::class, 'show'])->name('show');
-            Route::put('{id}', [BuildingController::class, 'update'])->name('update');
-            Route::delete('delete/{id}', [BuildingController::class, 'destroy'])->name('delete');
-        });
-
-        Route::prefix('rooms')->name('rooms.')->group(function () {
-            Route::get('/', [RoomController::class, 'index'])->name('index');
-            Route::get('data', [RoomController::class, 'getData'])->name('data');
-            Route::get('stats', [RoomController::class, 'getStats'])->name('stats');
-            Route::post('store', [RoomController::class, 'store'])->name('store');
-            Route::get('{id}', [RoomController::class, 'show'])->name('show');
-            Route::put('{id}', [RoomController::class, 'update'])->name('update');
-            Route::delete('delete/{id}', [RoomController::class, 'destroy'])->name('delete');
-        });
-
         Route::prefix('room-schedules')->name('room-schedules.')->group(function () {
             Route::get('/', [RoomScheduleController::class, 'index'])->name('index');
             Route::get('data', [RoomScheduleController::class, 'getData'])->name('data');
@@ -160,6 +140,26 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::get('{id}', [DepartmentController::class, 'show'])->name('show');
             Route::put('{id}', [DepartmentController::class, 'update'])->name('update');
             Route::delete('delete/{id}', [DepartmentController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('buildings')->name('buildings.')->group(function () {
+            Route::get('/', [BuildingController::class, 'index'])->name('index');
+            Route::get('data', [BuildingController::class, 'getData'])->name('data');
+            Route::get('stats', [BuildingController::class, 'getStats'])->name('stats');
+            Route::post('store', [BuildingController::class, 'store'])->name('store');
+            Route::get('{id}', [BuildingController::class, 'show'])->name('show');
+            Route::put('{id}', [BuildingController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [BuildingController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('rooms')->name('rooms.')->group(function () {
+            Route::get('/', [RoomController::class, 'index'])->name('index');
+            Route::get('data', [RoomController::class, 'getData'])->name('data');
+            Route::get('stats', [RoomController::class, 'getStats'])->name('stats');
+            Route::post('store', [RoomController::class, 'store'])->name('store');
+            Route::get('{id}', [RoomController::class, 'show'])->name('show');
+            Route::put('{id}', [RoomController::class, 'update'])->name('update');
+            Route::delete('delete/{id}', [RoomController::class, 'destroy'])->name('delete');
         });
 
         Route::prefix('programs')->name('programs.')->group(function () {
