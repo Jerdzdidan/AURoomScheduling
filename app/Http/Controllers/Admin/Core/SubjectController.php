@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Core;
 
 use App\Http\Controllers\Controller;
+use App\Imports\SubjectImport;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Program;
@@ -11,6 +12,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\DataTables;
 
 class SubjectController extends Controller
@@ -82,6 +84,27 @@ class SubjectController extends Controller
                 'branches.name as branch_name',
                 'branches.code as branch_code',
             ]);
+
+        // Apply dropdown filters
+        if ($branchId = request()->input('filter_branch_id')) {
+            $subjects->where('branches.id', $branchId);
+        }
+
+        if ($departmentId = request()->input('filter_department_id')) {
+            $subjects->where('departments.id', $departmentId);
+        }
+
+        if ($programId = request()->input('filter_program_id')) {
+            $subjects->where('subjects.program_id', $programId);
+        }
+
+        if ($subjectType = request()->input('filter_subject_type')) {
+            $subjects->where('subjects.subject_type', $subjectType);
+        }
+
+        if ($classType = request()->input('filter_class_type')) {
+            $subjects->where('subjects.class_type', $classType);
+        }
 
         return DataTables::of($subjects)
             ->filter(function ($query) {
@@ -193,6 +216,8 @@ class SubjectController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('subjects', 'code')
+                    ->where('program_id', $request->input('program_id'))
+                    ->where('class_type', $request->input('class_type'))
                     ->ignore($subject?->id),
             ],
             'subject_type' => ['required', 'string', Rule::in(self::SUBJECT_TYPES)],
@@ -211,5 +236,47 @@ class SubjectController extends Controller
         $decrypted = Crypt::decryptString($id);
 
         return Subject::findOrFail($decrypted);
+    }
+
+    public function downloadImportTemplate()
+    {
+        $headers = ['code', 'name', 'branch_code', 'department_code', 'program_code', 'subject_type', 'class_type'];
+        $examples = [
+            ['ITC 110', 'Introduction to Computing', 'MNL', 'CCS', 'BSIT', 'MAJOR', 'LEC'],
+            ['ITC 110', 'Introduction to Computing', 'MNL', 'CCS', 'BSIT', 'MAJOR', 'LAB'],
+        ];
+
+        $callback = function () use ($headers, $examples) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
+
+            foreach ($examples as $row) {
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="subjects_import_template.csv"',
+        ]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,xlsx,xls,txt', 'max:2048'],
+        ]);
+
+        $import = new SubjectImport();
+
+        Excel::import($import, $request->file('file'));
+
+        return response()->json([
+            'imported' => $import->getImportedCount(),
+            'skipped'  => $import->getSkippedCount(),
+            'errors'   => $import->getErrors(),
+        ]);
     }
 }

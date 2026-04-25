@@ -15,8 +15,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // Users
         User::factory()->create([
             'name' => 'root',
             'email' => 'root@gmail.com',
@@ -34,5 +33,17 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::factory(30)->create();
+
+        // Application data (order matters — respects FK dependencies)
+        $this->call([
+            BranchSeeder::class,
+            DepartmentSeeder::class,
+            ProgramSeeder::class,
+            AcademicPeriodSeeder::class,
+            BuildingSeeder::class,
+            RoomSeeder::class,
+            ProfessorSeeder::class,
+            SubjectSeeder::class,
+        ]);
     }
 }

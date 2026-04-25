@@ -1,0 +1,16 @@
+code,name,branch_code,department_code,program_code,subject_type,class_type
+CS 111,Introduction to Computing,JSC,SCS,BSCS,MAJOR,LEC
+CS 111,Introduction to Computing,JSC,SCS,BSCS,MAJOR,LAB
+CS 112,Data Structures and Algorithms,JSC,SCS,BSCS,MAJOR,LEC
+CS 112,Data Structures and Algorithms,JSC,SCS,BSCS,MAJOR,LAB
+CS 113,Object-Oriented Programming,JSC,SCS,BSCS,MAJOR,LEC
+CS 114,Database Management Systems,JSC,SCS,BSCS,MAJOR,LEC
+CS 114,Database Management Systems,JSC,SCS,BSCS,MAJOR,LAB
+CS 115,Operating Systems,JSC,SCS,BSCS,MAJOR,LEC
+GE 101,Mathematics in the Modern World,JSC,SCS,BSCS,MINOR,LEC
+GE 102,Purposive Communication,JSC,SCS,BSCS,MINOR,LEC
+BAD 001,Bad Branch Test,XXX,SCS,BSCS,MAJOR,LEC
+BAD 002,Bad Dept Test,JSC,XXX,BSCS,MAJOR,LEC
+BAD 003,Bad Program Test,JSC,SCS,BSIT,MAJOR,LEC
+BAD 004,Bad Subject Type,JSC,SCS,BSCS,ELECTIVE,LEC
+BAD 005,Bad Class Type,JSC,SCS,BSCS,MAJOR,SEM

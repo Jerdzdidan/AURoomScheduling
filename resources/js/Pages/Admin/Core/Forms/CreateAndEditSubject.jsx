@@ -60,7 +60,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
             .fail(() => {
                 toastr.error('Failed to load subject details.');
             });
-    }, [editId, programs, clearErrors, setData]);
+    }, [editId]);
 
     useEffect(() => {
         const $offcanvas = $('#subjectOffcanvas');
@@ -77,6 +77,8 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
         e.preventDefault();
 
         const options = {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 setData(getInitialValues());
                 $('#subjectOffcanvas').offcanvas('hide');

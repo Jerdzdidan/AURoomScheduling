@@ -155,7 +155,13 @@ export default function Professor() {
             });
         };
 
+        const $offcanvas = $('#professorOffcanvas');
+        $offcanvas.on('hidden.bs.offcanvas', () => {
+            setEditId(null);
+        });
+
         return () => {
+            $offcanvas.off('hidden.bs.offcanvas');
             table.destroy();
             delete window.professorCRUD;
         };

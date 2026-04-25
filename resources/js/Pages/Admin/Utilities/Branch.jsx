@@ -164,7 +164,13 @@ export default function Branch() {
             });
         };
 
+        const $offcanvas = $('#branchOffcanvas');
+        $offcanvas.on('hidden.bs.offcanvas', () => {
+            setEditId(null);
+        });
+
         return () => {
+            $offcanvas.off('hidden.bs.offcanvas');
             table.destroy();
             delete window.branchCRUD;
         };

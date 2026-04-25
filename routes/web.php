@@ -89,6 +89,8 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::get('/', [SubjectController::class, 'index'])->name('index');
             Route::get('data', [SubjectController::class, 'getData'])->name('data');
             Route::get('stats', [SubjectController::class, 'getStats'])->name('stats');
+            Route::get('import-template', [SubjectController::class, 'downloadImportTemplate'])->name('import-template');
+            Route::post('import', [SubjectController::class, 'import'])->name('import');
             Route::post('store', [SubjectController::class, 'store'])->name('store');
             Route::get('{id}', [SubjectController::class, 'show'])->name('show');
             Route::put('{id}', [SubjectController::class, 'update'])->name('update');

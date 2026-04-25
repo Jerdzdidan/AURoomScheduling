@@ -5,13 +5,29 @@ import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
 import CreateAndEditSubject from "./Forms/CreateAndEditSubject";
+import ImportSubjectModal from "./Forms/ImportSubjectModal";
+import FilterSubjectOffcanvas from "./Forms/FilterSubjectOffcanvas";
 import { LuBookText, LuGraduationCap } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Subject() {
     const { branches = [], departments = [], programs = [], subjectTypeOptions = [], classTypeOptions = [] } = usePage().props;
     const tableRef = useRef(null);
+    const filtersRef = useRef({
+        branch_id: '',
+        department_id: '',
+        program_id: '',
+        subject_type: '',
+        class_type: '',
+    });
     const [editId, setEditId] = useState(null);
+    const [filters, setFilters] = useState({
+        branch_id: '',
+        department_id: '',
+        program_id: '',
+        subject_type: '',
+        class_type: '',
+    });
 
     const loadStats = () => {
         $.get(route('admin.core.subjects.stats')).done((stats) => {
@@ -50,6 +66,12 @@ export default function Subject() {
                 top2End: {
                     features: [{
                         buttons: [{
+                            text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-filter-alt icon-sm"></i></span>',
+                            className: "btn btn-info me-4",
+                            action: function () {
+                                $('#filterSubjectOffcanvas').offcanvas('show');
+                            }
+                        }, {
                             extend: "collection",
                             className: "btn btn-label-primary dropdown-toggle me-4",
                             text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-export me-sm-1"></i> <span class="d-none d-sm-inline-block">Export</span></span>',
@@ -61,6 +83,12 @@ export default function Subject() {
                                     columns: [1, 2, 3, 4, 5],
                                 }
                             }]
+                        }, {
+                            text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-import icon-sm"></i> <span class="d-none d-sm-inline-block">Import</span></span>',
+                            className: "btn btn-label-success me-4",
+                            action: function () {
+                                $('#importSubjectModal').modal('show');
+                            }
                         }, {
                             text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-plus icon-sm"></i> <span class="d-none d-sm-inline-block">Add New Record</span></span>',
                             className: "create-new btn btn-primary",
@@ -93,7 +121,19 @@ export default function Subject() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.core.subjects.data'),
+            initComplete: function () {
+                $('.dt-buttons').removeClass('btn-group');
+            },
+            ajax: {
+                url: route('admin.core.subjects.data'),
+                data: function (d) {
+                    d.filter_branch_id = filtersRef.current.branch_id;
+                    d.filter_department_id = filtersRef.current.department_id;
+                    d.filter_program_id = filtersRef.current.program_id;
+                    d.filter_subject_type = filtersRef.current.subject_type;
+                    d.filter_class_type = filtersRef.current.class_type;
+                },
+            },
             columns: [
                 { data: "id", visible: false },
                 { data: "name", width: "30%" },
@@ -191,7 +231,13 @@ export default function Subject() {
             });
         };
 
+        const $offcanvas = $('#subjectOffcanvas');
+        $offcanvas.on('hidden.bs.offcanvas', () => {
+            setEditId(null);
+        });
+
         return () => {
+            $offcanvas.off('hidden.bs.offcanvas');
             table.destroy();
             delete window.subjectCRUD;
         };
@@ -205,6 +251,13 @@ export default function Subject() {
         }
 
         loadStats();
+    };
+
+    const applyFilters = (overrideFilters) => {
+        filtersRef.current = { ...(overrideFilters ?? filters) };
+        if (tableRef.current) {
+            tableRef.current.ajax.reload(null, true);
+        }
     };
 
     return (
@@ -254,6 +307,19 @@ export default function Subject() {
                     subjectTypeOptions={subjectTypeOptions}
                     classTypeOptions={classTypeOptions}
                     onSuccess={handleSuccess}
+                />
+
+                <ImportSubjectModal onSuccess={handleSuccess} />
+
+                <FilterSubjectOffcanvas
+                    filters={filters}
+                    setFilters={setFilters}
+                    branches={branches}
+                    departments={departments}
+                    programs={programs}
+                    subjectTypeOptions={subjectTypeOptions}
+                    classTypeOptions={classTypeOptions}
+                    onApply={applyFilters}
                 />
             </Base>
         </>
