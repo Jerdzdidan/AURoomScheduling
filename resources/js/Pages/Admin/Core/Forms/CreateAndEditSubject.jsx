@@ -9,10 +9,12 @@ const getInitialValues = () => ({
     department_id: '',
     name: '',
     code: '',
+    subject_type: '',
+    class_type: '',
     program_id: '',
 });
 
-export default function CreateAndEditSubject({ editId, branches, departments, programs, onSuccess }) {
+export default function CreateAndEditSubject({ editId, branches, departments, programs, subjectTypeOptions, classTypeOptions, onSuccess }) {
     const isEditing = !!editId;
     const { data, setData, post, put, processing, errors, clearErrors } = useForm(getInitialValues());
 
@@ -50,6 +52,8 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
                     department_id: selectedProgram?.department_id?.toString() ?? '',
                     name: subject.name ?? '',
                     code: subject.code ?? '',
+                    subject_type: subject.subject_type ?? '',
+                    class_type: subject.class_type ?? '',
                     program_id: subject.program_id?.toString() ?? '',
                 });
             })
@@ -104,28 +108,6 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
             onSubmit={handleSubmit}
             submitButtonName={processing ? 'Saving...' : (isEditing ? 'Update' : 'Submit')}
         >
-            <InputField
-                id="subject-name"
-                label="Subject Name"
-                name="name"
-                icon="bx bx-book"
-                placeholder="Introduction to Computing"
-                value={data.name}
-                onChange={(e) => setData('name', e.target.value)}
-                error={errors.name}
-            />
-
-            <InputField
-                id="subject-code"
-                label="Subject Code"
-                name="code"
-                icon="bx bx-purchase-tag"
-                placeholder="ITC 110"
-                value={data.code}
-                onChange={(e) => setData('code', e.target.value.toUpperCase())}
-                error={errors.code}
-            />
-
             <SelectField
                 id="subject-branch"
                 label="Branch"
@@ -185,6 +167,53 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
                     : 'Select a department first before choosing a program.'}
                 disabled={!data.department_id}
             />
+
+            <InputField
+                id="subject-code"
+                label="Subject Code"
+                name="code"
+                icon="bx bx-purchase-tag"
+                placeholder="ITC 110"
+                value={data.code}
+                onChange={(e) => setData('code', e.target.value.toUpperCase())}
+                error={errors.code}
+            />
+
+            <InputField
+                id="subject-name"
+                label="Subject Name"
+                name="name"
+                icon="bx bx-book"
+                placeholder="Introduction to Computing"
+                value={data.name}
+                onChange={(e) => setData('name', e.target.value)}
+                error={errors.name}
+            />
+
+            <SelectField
+                id="subject-subject-type"
+                label="Subject Type"
+                name="subject_type"
+                placeholder="Select subject type"
+                value={data.subject_type}
+                onChange={(val) => setData('subject_type', val)}
+                options={subjectTypeOptions}
+                dropdownParent="#subjectOffcanvas"
+                error={errors.subject_type}
+            />
+
+            <SelectField
+                id="subject-class-type"
+                label="Class Type"
+                name="class_type"
+                placeholder="Select class type"
+                value={data.class_type}
+                onChange={(val) => setData('class_type', val)}
+                options={classTypeOptions}
+                dropdownParent="#subjectOffcanvas"
+                error={errors.class_type}
+            />
+
         </OffcanvasForm>
     );
 }

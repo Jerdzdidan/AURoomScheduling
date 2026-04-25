@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('room_id')->constrained()->cascadeOnDelete();
             $table->foreignId('professor_id')->nullable()->constrained()->nullOnDelete();
             $table->string('section');
-            $table->string('day_of_week');
+            $table->enum('day_of_week', ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
             $table->time('start_time');
             $table->time('end_time');
             $table->text('notes')->nullable();

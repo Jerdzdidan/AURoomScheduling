@@ -8,8 +8,6 @@ use App\Http\Controllers\Admin\Utilities\BuildingController;
 use App\Http\Controllers\Admin\Core\RoomScheduleController;
 use App\Http\Controllers\Admin\Core\SubjectController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
-use App\Http\Controllers\Admin\UserManagement\AdminController;
-use App\Http\Controllers\Admin\UserManagement\OfficerController;
 use App\Http\Controllers\Admin\Utilities\RoomController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ProfileController;
@@ -65,25 +63,12 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     })->name('index');
 
     Route::prefix('users')->name('users.')->group(function () {
-        // ADMIN ACCOUNTS ROUTES
-        Route::prefix('admin-accounts')->name('admin-accounts.')->group(function () {
-            Route::get('/', [AdminController::class, 'index'])->name('index');
-            Route::post('store', [AdminController::class, 'store'])->name('store');
-            Route::get('{id}', [AdminController::class, 'show'])->name('show');
-            Route::put('{id}', [AdminController::class, 'update'])->name('update');
-        });
-
-        // OFFICER ACCOUNTS ROUTES
-        Route::prefix('officer-accounts')->name('officer-accounts.')->group(function () {
-            Route::get('/', [OfficerController::class, 'index'])->name('index');
-            Route::post('store', [OfficerController::class, 'store'])->name('store');
-            Route::get('{id}', [OfficerController::class, 'show'])->name('show');
-            Route::put('{id}', [OfficerController::class, 'update'])->name('update');
-        });
-
-        // GENERIC USER ROUTES
-        Route::get('data/{user_type}', [UserController::class, 'getData'])->name('data');
-        Route::get('stats/{user_type}', [UserController::class, 'getStats'])->name('stats');
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::post('store', [UserController::class, 'store'])->name('store');
+        Route::get('data', [UserController::class, 'getData'])->name('data');
+        Route::get('stats', [UserController::class, 'getStats'])->name('stats');
+        Route::get('{id}', [UserController::class, 'show'])->name('show');
+        Route::put('{id}', [UserController::class, 'update'])->name('update');
         Route::post('toggle-status/{id}', [UserController::class, 'toggle'])->middleware(PreventSelfAction::class)->name('toggle');
         Route::delete('delete/{id}', [UserController::class, 'destroy'])->middleware(PreventSelfAction::class)->name('delete');
     });

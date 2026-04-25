@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('code');
+            $table->enum('subject_type', ['MAJOR', 'MINOR']);
+            $table->enum('class_type', ['LEC', 'LAB']);
             $table->foreignId('program_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });

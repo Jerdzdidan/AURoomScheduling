@@ -24,6 +24,16 @@ class BranchController extends Controller
             ->withCount('departments');
 
         return DataTables::of($branches)
+            ->filter(function ($query) {
+                $search = request()->input('search.value');
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('branches.name', 'like', "%{$search}%")
+                            ->orWhere('branches.code', 'like', "%{$search}%");
+                    });
+                }
+            })
             ->editColumn('id', function ($row) {
                 return Crypt::encryptString($row->id);
             })

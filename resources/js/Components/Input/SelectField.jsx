@@ -28,6 +28,7 @@ export default function SelectField({
     error,
     help,
     disabled = false,
+    required = false,
 }) {
     const selectRef = useRef(null);
 
@@ -104,7 +105,12 @@ export default function SelectField({
 
     return (
         <div className="mb-3">
-            {label && <label className="form-label" htmlFor={id}>{label}</label>}
+            {label && (
+                <label className="form-label" htmlFor={id}>
+                    {label}
+                    {required && <span className="text-danger"> *</span>}
+                </label>
+            )}
             <select
                 ref={selectRef}
                 id={id}
@@ -112,6 +118,8 @@ export default function SelectField({
                 className="form-select"
                 defaultValue=""
                 disabled={disabled}
+                required={required}
+                aria-required={required}
             >
                 <option value=""></option>
                 {options.map((option) => (

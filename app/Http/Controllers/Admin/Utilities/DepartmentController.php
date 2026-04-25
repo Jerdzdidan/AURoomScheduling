@@ -37,6 +37,18 @@ class DepartmentController extends Controller
             ->withCount(['programs', 'users']);
 
         return DataTables::of($departments)
+            ->filter(function ($query) {
+                $search = request()->input('search.value');
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('departments.name', 'like', "%{$search}%")
+                            ->orWhere('departments.code', 'like', "%{$search}%")
+                            ->orWhere('branches.name', 'like', "%{$search}%")
+                            ->orWhere('branches.code', 'like', "%{$search}%");
+                    });
+                }
+            })
             ->editColumn('id', function ($row) {
                 return Crypt::encryptString($row->id);
             })

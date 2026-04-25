@@ -28,6 +28,7 @@ class RoomScheduleController extends Controller
         'THURSDAY' => 'Thursday',
         'FRIDAY' => 'Friday',
         'SATURDAY' => 'Saturday',
+        'SUNDAY' => 'Sunday',
     ];
 
     public function index()
@@ -162,6 +163,29 @@ class RoomScheduleController extends Controller
             ]);
 
         return DataTables::of($roomSchedules)
+            ->filter(function ($query) {
+                $search = request()->input('search.value');
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('academic_periods.name', 'like', "%{$search}%")
+                            ->orWhere('subjects.name', 'like', "%{$search}%")
+                            ->orWhere('subjects.code', 'like', "%{$search}%")
+                            ->orWhere('programs.name', 'like', "%{$search}%")
+                            ->orWhere('programs.code', 'like', "%{$search}%")
+                            ->orWhere('departments.name', 'like', "%{$search}%")
+                            ->orWhere('departments.code', 'like', "%{$search}%")
+                            ->orWhere('branches.name', 'like', "%{$search}%")
+                            ->orWhere('branches.code', 'like', "%{$search}%")
+                            ->orWhere('rooms.code', 'like', "%{$search}%")
+                            ->orWhere('buildings.name', 'like', "%{$search}%")
+                            ->orWhere('buildings.code', 'like', "%{$search}%")
+                            ->orWhere('professors.name', 'like', "%{$search}%")
+                            ->orWhere('room_schedules.section', 'like', "%{$search}%")
+                            ->orWhere('room_schedules.day_of_week', 'like', "%{$search}%");
+                    });
+                }
+            })
             ->editColumn('id', function ($row) {
                 return Crypt::encryptString((string) $row->id);
             })

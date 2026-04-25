@@ -2,9 +2,9 @@ import { usePage } from '@inertiajs/react';
 import SidebarItem from "@/Components/Sidebar/SidebarItem";
 import Bar from "@/Components/Sidebar/Bar";
 import {
-    LuUserRoundCog, LuIdCard, LuCalendarRange, LuHouse, LuBookText,
+    LuCalendarRange, LuHouse, LuBookText,
     LuSchool, LuUniversity, LuDoorOpen, LuGraduationCap, LuBuilding2,
-    LuLayoutList, LuUsers
+    LuLayoutList, LuUsers, LuIdCard
 } from "react-icons/lu";
 
 function Admin() {
@@ -62,15 +62,9 @@ function Admin() {
             </li>
 
             <SidebarItem
-                routeName="admin.users.officer-accounts.index"
-                Icon={LuIdCard}
-                name="Officer"
-            />
-
-            <SidebarItem
-                routeName="admin.users.admin-accounts.index"
-                Icon={LuUserRoundCog}
-                name="Admin"
+                routeName="admin.users.index"
+                Icon={LuUsers}
+                name="Users"
             />
 
             <li className="menu-header small text-uppercase">
@@ -105,6 +99,12 @@ function Admin() {
                 routeName="admin.utilities.rooms.index"
                 Icon={LuDoorOpen}
                 name="Room"
+            />
+
+            <SidebarItem
+                routeName="_"
+                Icon={LuIdCard}
+                name="Professors"
             />
 
             <SidebarItem

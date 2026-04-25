@@ -9,7 +9,7 @@ import { LuBookText, LuGraduationCap } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Subject() {
-    const { branches = [], departments = [], programs = [] } = usePage().props;
+    const { branches = [], departments = [], programs = [], subjectTypeOptions = [], classTypeOptions = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
@@ -58,7 +58,7 @@ export default function Subject() {
                                 text: '<span class="d-flex align-items-center"><i class="icon-base bx bx-file me-1"></i>Csv</span>',
                                 className: "dropdown-item",
                                 exportOptions: {
-                                    columns: [1, 2, 3],
+                                    columns: [1, 2, 3, 4, 5],
                                 }
                             }]
                         }, {
@@ -100,7 +100,7 @@ export default function Subject() {
                 { data: "code", width: "20%" },
                 {
                     data: "program_name",
-                    width: "35%",
+                    width: "25%",
                     render: (data, type, row) => `
                         <div class="d-flex flex-column">
                             <span class="fw-medium">${data ?? '-'}</span>
@@ -109,6 +109,25 @@ export default function Subject() {
                             <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
                         </div>
                     `,
+                },
+                {
+                    data: "subject_type",
+                    width: "10%",
+                    render: (data) => {
+                        if (!data) return '-';
+                        const badge = data === 'MAJOR' ? 'bg-label-primary' : 'bg-label-info';
+                        const label = data === 'MAJOR' ? 'Major' : 'Minor';
+                        return `<span class="badge ${badge}">${label}</span>`;
+                    },
+                },
+                {
+                    data: "class_type",
+                    width: "10%",
+                    render: (data) => {
+                        if (!data) return '-';
+                        const badge = data === 'LEC' ? 'bg-label-warning' : 'bg-label-success';
+                        return `<span class="badge ${badge}">${data}</span>`;
+                    },
                 },
                 {
                     data: null,
@@ -220,6 +239,8 @@ export default function Subject() {
                             <th>Name</th>
                             <th>Code</th>
                             <th>Program</th>
+                            <th>Subject Type</th>
+                            <th>Class Type</th>
                             <th>Actions</th>
                         </ScrollableTable>
                     </div>
@@ -230,6 +251,8 @@ export default function Subject() {
                     branches={branches}
                     departments={departments}
                     programs={programs}
+                    subjectTypeOptions={subjectTypeOptions}
+                    classTypeOptions={classTypeOptions}
                     onSuccess={handleSuccess}
                 />
             </Base>

@@ -37,6 +37,18 @@ class BuildingController extends Controller
             ->withCount(['rooms']);
 
         return DataTables::of($buildings)
+            ->filter(function ($query) {
+                $search = request()->input('search.value');
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('buildings.name', 'like', "%{$search}%")
+                            ->orWhere('buildings.code', 'like', "%{$search}%")
+                            ->orWhere('branches.name', 'like', "%{$search}%")
+                            ->orWhere('branches.code', 'like', "%{$search}%");
+                    });
+                }
+            })
             ->editColumn('id', function ($row) {
                 return Crypt::encryptString($row->id);
             })

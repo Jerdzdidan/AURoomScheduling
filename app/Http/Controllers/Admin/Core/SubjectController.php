@@ -15,6 +15,9 @@ use Yajra\DataTables\DataTables;
 
 class SubjectController extends Controller
 {
+    private const SUBJECT_TYPES = ['MAJOR', 'MINOR'];
+    private const CLASS_TYPES = ['LEC', 'LAB'];
+
     public function index()
     {
         return inertia('Admin/Core/Subject', [
@@ -50,6 +53,12 @@ class SubjectController extends Controller
                     'branches.name as branch_name',
                     'branches.code as branch_code',
                 ]),
+            'subjectTypeOptions' => collect(self::SUBJECT_TYPES)
+                ->map(fn(string $value) => ['id' => $value, 'name' => ucfirst(strtolower($value))])
+                ->values(),
+            'classTypeOptions' => collect(self::CLASS_TYPES)
+                ->map(fn(string $value) => ['id' => $value, 'name' => $value])
+                ->values(),
         ]);
     }
 
@@ -63,6 +72,8 @@ class SubjectController extends Controller
                 'subjects.id',
                 'subjects.name',
                 'subjects.code',
+                'subjects.subject_type',
+                'subjects.class_type',
                 'subjects.program_id',
                 'programs.name as program_name',
                 'programs.code as program_code',
@@ -73,6 +84,24 @@ class SubjectController extends Controller
             ]);
 
         return DataTables::of($subjects)
+            ->filter(function ($query) {
+                $search = request()->input('search.value');
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('subjects.name', 'like', "%{$search}%")
+                            ->orWhere('subjects.code', 'like', "%{$search}%")
+                            ->orWhere('subjects.subject_type', 'like', "%{$search}%")
+                            ->orWhere('subjects.class_type', 'like', "%{$search}%")
+                            ->orWhere('programs.name', 'like', "%{$search}%")
+                            ->orWhere('programs.code', 'like', "%{$search}%")
+                            ->orWhere('departments.name', 'like', "%{$search}%")
+                            ->orWhere('departments.code', 'like', "%{$search}%")
+                            ->orWhere('branches.name', 'like', "%{$search}%")
+                            ->orWhere('branches.code', 'like', "%{$search}%");
+                    });
+                }
+            })
             ->editColumn('id', function ($row) {
                 return Crypt::encryptString($row->id);
             })
@@ -96,6 +125,8 @@ class SubjectController extends Controller
                 'id' => $id,
                 'name' => $subject->name,
                 'code' => $subject->code,
+                'subject_type' => $subject->subject_type,
+                'class_type' => $subject->class_type,
                 'program_id' => $subject->program_id,
             ]);
         } catch (DecryptException) {
@@ -164,6 +195,8 @@ class SubjectController extends Controller
                 Rule::unique('subjects', 'code')
                     ->ignore($subject?->id),
             ],
+            'subject_type' => ['required', 'string', Rule::in(self::SUBJECT_TYPES)],
+            'class_type' => ['required', 'string', Rule::in(self::CLASS_TYPES)],
             'program_id' => [
                 'required',
                 'integer',
