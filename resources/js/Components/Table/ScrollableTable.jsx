@@ -1,6 +1,6 @@
 const ScrollableTable = ({ id, children }) => {
     return (
-        <table id={id} className="dt-scrollableTable table table-bordered table-responsive">
+        <table id={id} className="dt-scrollableTable table table-bordered" style={{ width: '100%' }}>
             <thead>
                 <tr>
                     {children}

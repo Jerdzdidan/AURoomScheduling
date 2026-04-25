@@ -186,14 +186,18 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
                 error={errors.code}
             />
 
-            <InputField
+            <SelectField
                 id="room-type"
                 label="Room Type"
                 name="type"
-                icon="bx bx-category"
-                placeholder="Laboratory"
+                placeholder="Select a room type"
                 value={data.type}
-                onChange={(e) => setData('type', e.target.value)}
+                onChange={(val) => setData('type', val)}
+                options={[
+                    { id: 'Lec Room', name: 'Lec Room' },
+                    { id: 'Lab Room', name: 'Lab Room' },
+                ]}
+                dropdownParent="#roomOffcanvas"
                 error={errors.type}
             />
         </OffcanvasForm>

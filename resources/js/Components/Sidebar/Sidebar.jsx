@@ -102,7 +102,7 @@ function Admin() {
             />
 
             <SidebarItem
-                routeName="_"
+                routeName="admin.utilities.professors.index"
                 Icon={LuIdCard}
                 name="Professors"
             />
