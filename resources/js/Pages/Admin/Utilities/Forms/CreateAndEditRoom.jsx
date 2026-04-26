@@ -60,17 +60,24 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
         return () => $offcanvas.off('hidden.bs.offcanvas');
     }, [clearErrors, setData]);
 
-    const updateRoomCode = (buildingId, roomNumber) => {
+    const updateRoomCode = (branchId, buildingId, roomNumber) => {
+        const selectedBranch = branches.find(b => b.id.toString() === branchId?.toString());
+        const branchCode = selectedBranch ? selectedBranch.code : '';
+
         const selectedBuilding = buildings.find(b => b.id.toString() === buildingId?.toString());
         const buildingCode = selectedBuilding ? selectedBuilding.code : '';
+
+        if (!branchCode) {
+            return '';
+        }
 
         if (!buildingCode) {
             return '';
         }
 
         return roomNumber
-            ? `AUJSC-${buildingCode}-${roomNumber}`
-            : `AUJSC-${buildingCode}-`;
+            ? `${branchCode}-${buildingCode}-${roomNumber}`
+            : `${branchCode}-${buildingCode}-`;
     };
 
     const handleRoomNumberChange = (e) => {
@@ -78,7 +85,7 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
         setData({
             ...data,
             room_number: val,
-            code: updateRoomCode(data.building_id, val),
+            code: updateRoomCode(data.branch_id, data.building_id, val),
         });
     };
 
@@ -86,7 +93,7 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
         setData({
             ...data,
             building_id: val,
-            code: updateRoomCode(val, data.room_number),
+            code: updateRoomCode(data.branch_id, val, data.room_number),
         });
     };
 

@@ -33,6 +33,10 @@ class RoomScheduleController extends Controller
 
     public function index()
     {
+        $currentAcademicPeriod = AcademicPeriod::query()
+            ->where('is_current', true)
+            ->first(['id', 'name', 'academic_year', 'semester', 'is_current']);
+
         $academicPeriods = AcademicPeriod::query()
             ->latestFirst()
             ->get(['id', 'name', 'academic_year', 'semester']);
@@ -96,19 +100,22 @@ class RoomScheduleController extends Controller
             ]);
 
         $rooms = Room::query()
-            ->with('building:id,name,code')
-            ->orderBy('code')
-            ->get()
-            ->map(function (Room $room) {
-                return [
-                    'id' => $room->id,
-                    'name' => $room->building?->name ?? $room->code,
-                    'code' => $room->code,
-                    'type' => $room->type,
-                    'building_code' => $room->building?->code,
-                ];
-            })
-            ->values();
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('branches', 'buildings.branch_id', '=', 'branches.id')
+            ->orderBy('branches.name')
+            ->orderBy('buildings.name')
+            ->orderBy('rooms.code')
+            ->get([
+                'rooms.id',
+                'rooms.code',
+                'rooms.type',
+                'buildings.id as building_id',
+                'buildings.name as building_name',
+                'buildings.code as building_code',
+                'branches.id as branch_id',
+                'branches.name as branch_name',
+                'branches.code as branch_code',
+            ]);
 
         return inertia('Admin/Core/RoomSchedule', [
             'academicPeriods' => $academicPeriods,
@@ -117,7 +124,8 @@ class RoomScheduleController extends Controller
             'programs' => $programs,
             'subjects' => $subjects,
             'rooms' => $rooms,
-            'currentAcademicPeriodId' => AcademicPeriod::query()->where('is_current', true)->value('id'),
+            'currentAcademicPeriod' => $currentAcademicPeriod,
+            'currentAcademicPeriodId' => $currentAcademicPeriod?->id,
             'dayOptions' => collect(self::DAY_LABELS)
                 ->map(fn(string $name, string $id) => ['id' => $id, 'name' => $name])
                 ->values(),
@@ -162,6 +170,34 @@ class RoomScheduleController extends Controller
                 'professors.name as professor_name',
             ]);
 
+        if ($academicPeriodId = request()->input('filter_academic_period_id')) {
+            $roomSchedules->where('room_schedules.academic_period_id', $academicPeriodId);
+        }
+
+        if ($branchId = request()->input('filter_branch_id')) {
+            $roomSchedules->where('branches.id', $branchId);
+        }
+
+        if ($departmentId = request()->input('filter_department_id')) {
+            $roomSchedules->where('departments.id', $departmentId);
+        }
+
+        if ($programId = request()->input('filter_program_id')) {
+            $roomSchedules->where('programs.id', $programId);
+        }
+
+        if ($subjectId = request()->input('filter_subject_id')) {
+            $roomSchedules->where('subjects.id', $subjectId);
+        }
+
+        if ($dayOfWeek = request()->input('filter_day_of_week')) {
+            $roomSchedules->where('room_schedules.day_of_week', $dayOfWeek);
+        }
+
+        if ($roomId = request()->input('filter_room_id')) {
+            $roomSchedules->where('rooms.id', $roomId);
+        }
+
         return DataTables::of($roomSchedules)
             ->filter(function ($query) {
                 $search = request()->input('search.value');
@@ -204,6 +240,65 @@ class RoomScheduleController extends Controller
                 ? RoomSchedule::query()->where('academic_period_id', $currentAcademicPeriodId)->count()
                 : 0,
             'rooms_in_use' => RoomSchedule::query()->distinct('room_id')->count('room_id'),
+        ]);
+    }
+
+    public function getAvailableRooms(Request $request)
+    {
+        $request->merge([
+            'day_of_week' => strtoupper((string) $request->input('day_of_week')),
+        ]);
+
+        $validated = $request->validate([
+            'academic_period_id' => ['required', 'integer', 'exists:academic_periods,id'],
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'day_of_week' => ['required', 'string', Rule::in(array_keys(self::DAY_LABELS))],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'schedule_id' => ['nullable', 'string'],
+        ]);
+
+        $this->validateTimeWindow($validated['start_time'], 'start_time');
+        $this->validateTimeWindow($validated['end_time'], 'end_time');
+
+        try {
+            $ignoreSchedule = $request->filled('schedule_id')
+                ? $this->findScheduleOrFail((string) $request->input('schedule_id'))
+                : null;
+        } catch (DecryptException) {
+            return response()->json(['message' => 'Invalid room schedule ID.'], 400);
+        }
+
+        $conflictingRoomIds = RoomSchedule::query()
+            ->where('academic_period_id', $validated['academic_period_id'])
+            ->where('day_of_week', $validated['day_of_week'])
+            ->when($ignoreSchedule, fn($query) => $query->whereKeyNot($ignoreSchedule->id))
+            ->where('start_time', '<', $validated['end_time'])
+            ->where('end_time', '>', $validated['start_time'])
+            ->pluck('room_id');
+
+        $branchRooms = Room::query()
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->where('buildings.branch_id', $validated['branch_id']);
+
+        $totalRooms = (clone $branchRooms)->count();
+
+        $rooms = $branchRooms
+            ->when($conflictingRoomIds->isNotEmpty(), fn($query) => $query->whereNotIn('rooms.id', $conflictingRoomIds))
+            ->orderBy('buildings.code')
+            ->orderBy('rooms.code')
+            ->get([
+                'rooms.id',
+                'rooms.code',
+                'rooms.type',
+                'buildings.name as building_name',
+                'buildings.code as building_code',
+            ]);
+
+        return response()->json([
+            'total_rooms' => $totalRooms,
+            'available_count' => $rooms->count(),
+            'rooms' => $rooms,
         ]);
     }
 
@@ -309,8 +404,37 @@ class RoomScheduleController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $lockedAcademicPeriodId = $roomSchedule
+            ? (int) $roomSchedule->academic_period_id
+            : (int) (AcademicPeriod::query()->where('is_current', true)->value('id') ?? 0);
+
+        if (!$lockedAcademicPeriodId) {
+            throw ValidationException::withMessages([
+                'academic_period_id' => ['Set a current academic period first before adding room schedules.'],
+            ]);
+        }
+
+        if ((int) $validated['academic_period_id'] !== $lockedAcademicPeriodId) {
+            throw ValidationException::withMessages([
+                'academic_period_id' => [$roomSchedule
+                    ? 'Academic period cannot be changed when editing a room schedule.'
+                    : 'New room schedules can only be created for the current academic period.'],
+            ]);
+        }
+
         $this->validateTimeWindow($validated['start_time'], 'start_time');
         $this->validateTimeWindow($validated['end_time'], 'end_time');
+
+        $roomBelongsToBranch = Room::query()
+            ->whereKey($validated['room_id'])
+            ->whereHas('building', fn($query) => $query->where('branch_id', $validated['branch_id']))
+            ->exists();
+
+        if (!$roomBelongsToBranch) {
+            throw ValidationException::withMessages([
+                'room_id' => ['The selected room does not belong to the chosen branch.'],
+            ]);
+        }
 
         $conflict = RoomSchedule::query()
             ->with(['subject:id,name,code', 'room:id,code'])

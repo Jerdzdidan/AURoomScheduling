@@ -1,10 +1,11 @@
 import { Head, usePage, useRemember } from "@inertiajs/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
 import CreateAndEditRoomSchedule from "./Forms/CreateAndEditRoomSchedule";
+import FilterRoomScheduleOffcanvas from "./Forms/FilterRoomScheduleOffcanvas";
 import { LuCalendarRange, LuDoorOpen, LuSchool } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
@@ -34,11 +35,30 @@ export default function RoomSchedule() {
         programs = [],
         subjects = [],
         rooms = [],
+        currentAcademicPeriod = null,
         currentAcademicPeriodId = null,
         dayOptions = [],
     } = usePage().props;
     const tableRef = useRef(null);
+    const filtersRef = useRef({
+        academic_period_id: "",
+        branch_id: "",
+        department_id: "",
+        program_id: "",
+        subject_id: "",
+        day_of_week: "",
+        room_id: "",
+    });
     const [editId, setEditId] = useRemember(null, "roomScheduleEditId");
+    const [filters, setFilters] = useState({
+        academic_period_id: "",
+        branch_id: "",
+        department_id: "",
+        program_id: "",
+        subject_id: "",
+        day_of_week: "",
+        room_id: "",
+    });
 
     const dayLabels = useMemo(
         () => Object.fromEntries(dayOptions.map((option) => [option.id, option.name])),
@@ -83,6 +103,12 @@ export default function RoomSchedule() {
                 top2End: {
                     features: [{
                         buttons: [{
+                            text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-filter-alt icon-sm"></i></span>',
+                            className: "btn btn-info me-4",
+                            action: function () {
+                                $("#filterRoomScheduleOffcanvas").offcanvas("show");
+                            },
+                        }, {
                             extend: "collection",
                             className: "btn btn-label-primary dropdown-toggle me-4",
                             text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-export me-sm-1"></i> <span class="d-none d-sm-inline-block">Export</span></span>',
@@ -98,8 +124,13 @@ export default function RoomSchedule() {
                             text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-plus icon-sm"></i> <span class="d-none d-sm-inline-block">Add Schedule</span></span>',
                             className: "create-new btn btn-primary",
                             action: function () {
+                                if (!currentAcademicPeriodId) {
+                                    toastr.error("Set a current academic period first before adding a room schedule.");
+                                    return;
+                                }
+
                                 setEditId(null);
-                                $("#roomScheduleOffcanvas").offcanvas("show");
+                                $("#roomScheduleModal").modal("show");
                             },
                         }],
                     }],
@@ -126,13 +157,27 @@ export default function RoomSchedule() {
                 },
             },
             autoWidth: false,
+            initComplete: function () {
+                $(".dt-buttons").removeClass("btn-group");
+            },
             order: [
                 [1, "desc"],
                 [2, "asc"],
                 [3, "asc"],
                 [4, "asc"],
             ],
-            ajax: route("admin.core.room-schedules.data"),
+            ajax: {
+                url: route("admin.core.room-schedules.data"),
+                data: function (d) {
+                    d.filter_academic_period_id = filtersRef.current.academic_period_id;
+                    d.filter_branch_id = filtersRef.current.branch_id;
+                    d.filter_department_id = filtersRef.current.department_id;
+                    d.filter_program_id = filtersRef.current.program_id;
+                    d.filter_subject_id = filtersRef.current.subject_id;
+                    d.filter_day_of_week = filtersRef.current.day_of_week;
+                    d.filter_room_id = filtersRef.current.room_id;
+                },
+            },
             columns: [
                 { data: "id", visible: false },
                 {
@@ -218,7 +263,7 @@ export default function RoomSchedule() {
 
         window.roomScheduleCRUD.edit = (id) => {
             setEditId(id);
-            $("#roomScheduleOffcanvas").offcanvas("show");
+            $("#roomScheduleModal").modal("show");
         };
 
         window.roomScheduleCRUD.delete = (id, subjectCode, section) => {
@@ -253,17 +298,17 @@ export default function RoomSchedule() {
             });
         };
 
-        const $offcanvas = $("#roomScheduleOffcanvas");
-        $offcanvas.on("hidden.bs.offcanvas", () => {
+        const $modal = $("#roomScheduleModal");
+        $modal.on("hidden.bs.modal", () => {
             setEditId(null);
         });
 
         return () => {
-            $offcanvas.off("hidden.bs.offcanvas");
+            $modal.off("hidden.bs.modal");
             table.destroy();
             delete window.roomScheduleCRUD;
         };
-    }, [dayLabels]);
+    }, [currentAcademicPeriodId, dayLabels]);
 
     const handleSuccess = () => {
         setEditId(null);
@@ -273,6 +318,13 @@ export default function RoomSchedule() {
         }
 
         loadStats();
+    };
+
+    const applyFilters = (overrideFilters) => {
+        filtersRef.current = { ...(overrideFilters ?? filters) };
+        if (tableRef.current) {
+            tableRef.current.ajax.reload(null, true);
+        }
     };
 
     return (
@@ -330,10 +382,23 @@ export default function RoomSchedule() {
                     departments={departments}
                     programs={programs}
                     subjects={subjects}
-                    rooms={rooms}
+                    currentAcademicPeriod={currentAcademicPeriod}
                     currentAcademicPeriodId={currentAcademicPeriodId}
                     dayOptions={dayOptions}
                     onSuccess={handleSuccess}
+                />
+
+                <FilterRoomScheduleOffcanvas
+                    filters={filters}
+                    setFilters={setFilters}
+                    academicPeriods={academicPeriods}
+                    branches={branches}
+                    departments={departments}
+                    programs={programs}
+                    subjects={subjects}
+                    rooms={rooms}
+                    dayOptions={dayOptions}
+                    onApply={applyFilters}
                 />
             </Base>
         </>

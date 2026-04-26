@@ -79,6 +79,7 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::get('/', [RoomScheduleController::class, 'index'])->name('index');
             Route::get('data', [RoomScheduleController::class, 'getData'])->name('data');
             Route::get('stats', [RoomScheduleController::class, 'getStats'])->name('stats');
+            Route::get('available-rooms', [RoomScheduleController::class, 'getAvailableRooms'])->name('available-rooms');
             Route::post('store', [RoomScheduleController::class, 'store'])->name('store');
             Route::get('{id}', [RoomScheduleController::class, 'show'])->name('show');
             Route::put('{id}', [RoomScheduleController::class, 'update'])->name('update');
