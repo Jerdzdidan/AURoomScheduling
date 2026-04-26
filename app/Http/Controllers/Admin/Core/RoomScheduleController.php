@@ -117,6 +117,10 @@ class RoomScheduleController extends Controller
                 'branches.code as branch_code',
             ]);
 
+        $professors = Professor::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return inertia('Admin/Core/RoomSchedule', [
             'academicPeriods' => $academicPeriods,
             'branches' => $branches,
@@ -124,6 +128,7 @@ class RoomScheduleController extends Controller
             'programs' => $programs,
             'subjects' => $subjects,
             'rooms' => $rooms,
+            'professors' => $professors,
             'currentAcademicPeriod' => $currentAcademicPeriod,
             'currentAcademicPeriodId' => $currentAcademicPeriod?->id,
             'dayOptions' => collect(self::DAY_LABELS)
@@ -312,6 +317,7 @@ class RoomScheduleController extends Controller
                 'academic_period_id' => $roomSchedule->academic_period_id,
                 'subject_id' => $roomSchedule->subject_id,
                 'room_id' => $roomSchedule->room_id,
+                'professor_id' => $roomSchedule->professor_id,
                 'section' => $roomSchedule->section,
                 'day_of_week' => $roomSchedule->day_of_week,
                 'start_time' => substr((string) $roomSchedule->start_time, 0, 5),
@@ -370,7 +376,6 @@ class RoomScheduleController extends Controller
         $request->merge([
             'section' => strtoupper(trim((string) $request->input('section'))),
             'day_of_week' => strtoupper((string) $request->input('day_of_week')),
-            'professor_name' => trim((string) $request->input('professor_name')),
             'notes' => trim((string) $request->input('notes')),
         ]);
 
@@ -400,7 +405,7 @@ class RoomScheduleController extends Controller
             'day_of_week' => ['required', 'string', Rule::in(array_keys(self::DAY_LABELS))],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
-            'professor_name' => ['required', 'string', 'max:255'],
+            'professor_id' => ['required', 'integer', 'exists:professors,id'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -461,15 +466,11 @@ class RoomScheduleController extends Controller
 
     private function buildSchedulePayload(array $validated): array
     {
-        $professor = Professor::query()->firstOrCreate([
-            'name' => $validated['professor_name'],
-        ]);
-
         return [
             'academic_period_id' => (int) $validated['academic_period_id'],
             'subject_id' => (int) $validated['subject_id'],
             'room_id' => (int) $validated['room_id'],
-            'professor_id' => $professor->id,
+            'professor_id' => (int) $validated['professor_id'],
             'section' => $validated['section'],
             'day_of_week' => $validated['day_of_week'],
             'start_time' => $validated['start_time'],

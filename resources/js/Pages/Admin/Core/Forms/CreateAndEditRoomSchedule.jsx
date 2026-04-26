@@ -33,12 +33,12 @@ const getInitialValues = (currentAcademicPeriodId) => ({
     department_id: "",
     program_id: "",
     subject_id: "",
+    professor_id: "",
     room_id: "",
     section: "",
     day_of_week: "",
     start_time: "",
     end_time: "",
-    professor_name: "",
     notes: "",
 });
 
@@ -84,7 +84,7 @@ const getErrorStep = (errors) => {
         return 0;
     }
 
-    if (errors.section || errors.professor_name || errors.day_of_week || errors.start_time || errors.end_time || errors.notes) {
+    if (errors.section || errors.professor_id || errors.day_of_week || errors.start_time || errors.end_time || errors.notes) {
         return 1;
     }
 
@@ -139,6 +139,7 @@ export default function CreateAndEditRoomSchedule({
     departments,
     programs,
     subjects,
+    professors,
     currentAcademicPeriod,
     currentAcademicPeriodId,
     dayOptions,
@@ -212,6 +213,11 @@ export default function CreateAndEditRoomSchedule({
         [subjects],
     );
 
+    const professorMap = useMemo(
+        () => new Map(professors.map((professor) => [professor.id?.toString(), professor])),
+        [professors],
+    );
+
     const dayLabels = useMemo(
         () => Object.fromEntries(dayOptions.map((option) => [option.id, option.name])),
         [dayOptions],
@@ -229,6 +235,7 @@ export default function CreateAndEditRoomSchedule({
     const selectedDepartment = departmentMap.get(data.department_id?.toString());
     const selectedProgram = programMap.get(data.program_id?.toString());
     const selectedSubject = subjectMap.get(data.subject_id?.toString());
+    const selectedProfessor = professorMap.get(data.professor_id?.toString());
     const selectedRoom = useMemo(
         () => availableRooms.find((room) => room.id?.toString() === data.room_id?.toString()) ?? null,
         [availableRooms, data.room_id],
@@ -289,7 +296,7 @@ export default function CreateAndEditRoomSchedule({
         if (stepIndex === 1) {
             return Boolean(
                 data.section
-                && data.professor_name
+                && data.professor_id
                 && data.day_of_week
                 && data.start_time
                 && data.end_time
@@ -363,8 +370,8 @@ export default function CreateAndEditRoomSchedule({
                 setError("section", "Enter a section name.");
                 hasStepError = true;
             }
-            if (!data.professor_name) {
-                setError("professor_name", "Enter the professor name.");
+            if (!data.professor_id) {
+                setError("professor_id", "Select a professor.");
                 hasStepError = true;
             }
             if (!data.day_of_week) {
@@ -501,11 +508,11 @@ export default function CreateAndEditRoomSchedule({
                     program_id: scheduleSubject?.program_id?.toString() ?? "",
                     subject_id: roomSchedule.subject_id?.toString() ?? "",
                     room_id: roomSchedule.room_id?.toString() ?? "",
+                    professor_id: roomSchedule.professor_id?.toString() ?? "",
                     section: roomSchedule.section ?? "",
                     day_of_week: roomSchedule.day_of_week ?? "",
                     start_time: roomSchedule.start_time ?? "",
                     end_time: roomSchedule.end_time ?? "",
-                    professor_name: roomSchedule.professor_name ?? "",
                     notes: roomSchedule.notes ?? "",
                 });
             })
@@ -604,7 +611,7 @@ export default function CreateAndEditRoomSchedule({
                     value={selectedSubject ? `${selectedSubject.code} - ${selectedSubject.name}` : ""}
                 />
                 <SummaryItem label="Section" value={data.section} />
-                <SummaryItem label="Professor" value={data.professor_name} />
+                <SummaryItem label="Professor" value={selectedProfessor?.name} />
                 <SummaryItem
                     label="Schedule"
                     value={
@@ -852,18 +859,20 @@ export default function CreateAndEditRoomSchedule({
                             </div>
 
                             <div className="col-md-6">
-                                <InputField
+                                <SelectField
                                     id="schedule-professor"
                                     label="Professor"
-                                    name="professor_name"
-                                    icon="bx bx-user"
-                                    placeholder="Prof. Maria Santos"
-                                    value={data.professor_name}
-                                    onChange={(event) => {
-                                        clearErrors("professor_name");
-                                        setData("professor_name", event.target.value);
+                                    name="professor_id"
+                                    placeholder="Select a professor"
+                                    value={data.professor_id}
+                                    onChange={(value) => {
+                                        clearErrors("professor_id");
+                                        setData("professor_id", value);
                                     }}
-                                    error={errors.professor_name}
+                                    options={professors}
+                                    dropdownParent="#roomScheduleModal"
+                                    error={errors.professor_id}
+                                    help="Create a professor first in Utilities if the person is not listed yet."
                                 />
                             </div>
                         </div>

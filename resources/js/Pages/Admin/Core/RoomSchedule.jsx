@@ -35,6 +35,7 @@ export default function RoomSchedule() {
         programs = [],
         subjects = [],
         rooms = [],
+        professors = [],
         currentAcademicPeriod = null,
         currentAcademicPeriodId = null,
         dayOptions = [],
@@ -384,6 +385,7 @@ export default function RoomSchedule() {
                     subjects={subjects}
                     currentAcademicPeriod={currentAcademicPeriod}
                     currentAcademicPeriodId={currentAcademicPeriodId}
+                    professors={professors}
                     dayOptions={dayOptions}
                     onSuccess={handleSuccess}
                 />
