@@ -615,7 +615,7 @@ export default function CreateAndEditRoomSchedule({
                 />
                 <SummaryItem
                     label="Selected Room"
-                    value={selectedRoom ? `${selectedRoom.code} - ${selectedRoom.building_code}` : ""}
+                    value={selectedRoom ? `${selectedRoom.code}` : ""}
                 />
             </div>
         </div>
