@@ -32,7 +32,6 @@ export default function RoomSchedule() {
         academicPeriods = [],
         branches = [],
         departments = [],
-        programs = [],
         subjects = [],
         rooms = [],
         professors = [],
@@ -45,7 +44,6 @@ export default function RoomSchedule() {
         academic_period_id: "",
         branch_id: "",
         department_id: "",
-        program_id: "",
         subject_id: "",
         day_of_week: "",
         room_id: "",
@@ -55,7 +53,6 @@ export default function RoomSchedule() {
         academic_period_id: "",
         branch_id: "",
         department_id: "",
-        program_id: "",
         subject_id: "",
         day_of_week: "",
         room_id: "",
@@ -173,7 +170,6 @@ export default function RoomSchedule() {
                     d.filter_academic_period_id = filtersRef.current.academic_period_id;
                     d.filter_branch_id = filtersRef.current.branch_id;
                     d.filter_department_id = filtersRef.current.department_id;
-                    d.filter_program_id = filtersRef.current.program_id;
                     d.filter_subject_id = filtersRef.current.subject_id;
                     d.filter_day_of_week = filtersRef.current.day_of_week;
                     d.filter_room_id = filtersRef.current.room_id;
@@ -204,7 +200,6 @@ export default function RoomSchedule() {
                         <div class="d-flex flex-column">
                             <span class="fw-medium">${row.subject_code ?? "-"}</span>
                             <small class="text-muted">${data ?? "-"}</small>
-                            <small class="text-muted">${row.program_code ?? ""}${row.program_name ? ` - ${row.program_name}` : ""}</small>
                             <small class="text-muted">${row.department_code ?? ""}${row.department_name ? ` - ${row.department_name}` : ""}</small>
                             <small class="text-muted">${row.branch_code ?? ""}${row.branch_name ? ` - ${row.branch_name}` : ""}</small>
                             <small class="text-muted">Section ${row.section ?? "-"}</small>
@@ -381,7 +376,6 @@ export default function RoomSchedule() {
                     academicPeriods={academicPeriods}
                     branches={branches}
                     departments={departments}
-                    programs={programs}
                     subjects={subjects}
                     currentAcademicPeriod={currentAcademicPeriod}
                     currentAcademicPeriodId={currentAcademicPeriodId}
@@ -396,7 +390,6 @@ export default function RoomSchedule() {
                     academicPeriods={academicPeriods}
                     branches={branches}
                     departments={departments}
-                    programs={programs}
                     subjects={subjects}
                     rooms={rooms}
                     dayOptions={dayOptions}

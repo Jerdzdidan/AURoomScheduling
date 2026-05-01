@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Imports\SubjectImport;
 use App\Models\Branch;
 use App\Models\Department;
-use App\Models\Program;
 use App\Models\Subject;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
@@ -38,23 +37,6 @@ class SubjectController extends Controller
                     'branches.name as branch_name',
                     'branches.code as branch_code',
                 ]),
-            'programs' => Program::query()
-                ->join('departments', 'programs.department_id', '=', 'departments.id')
-                ->join('branches', 'departments.branch_id', '=', 'branches.id')
-                ->orderBy('branches.name')
-                ->orderBy('departments.name')
-                ->orderBy('programs.name')
-                ->get([
-                    'programs.id',
-                    'programs.name',
-                    'programs.code',
-                    'programs.department_id',
-                    'departments.name as department_name',
-                    'departments.code as department_code',
-                    'departments.branch_id',
-                    'branches.name as branch_name',
-                    'branches.code as branch_code',
-                ]),
             'subjectTypeOptions' => collect(self::SUBJECT_TYPES)
                 ->map(fn(string $value) => ['id' => $value, 'name' => ucfirst(strtolower($value))])
                 ->values(),
@@ -67,18 +49,15 @@ class SubjectController extends Controller
     public function getData()
     {
         $subjects = Subject::query()
-            ->leftJoin('programs', 'subjects.program_id', '=', 'programs.id')
-            ->leftJoin('departments', 'programs.department_id', '=', 'departments.id')
-            ->leftJoin('branches', 'departments.branch_id', '=', 'branches.id')
+            ->join('departments', 'subjects.department_id', '=', 'departments.id')
+            ->join('branches', 'departments.branch_id', '=', 'branches.id')
             ->select([
                 'subjects.id',
                 'subjects.name',
                 'subjects.code',
                 'subjects.subject_type',
                 'subjects.class_type',
-                'subjects.program_id',
-                'programs.name as program_name',
-                'programs.code as program_code',
+                'subjects.department_id',
                 'departments.name as department_name',
                 'departments.code as department_code',
                 'branches.name as branch_name',
@@ -92,10 +71,6 @@ class SubjectController extends Controller
 
         if ($departmentId = request()->input('filter_department_id')) {
             $subjects->where('departments.id', $departmentId);
-        }
-
-        if ($programId = request()->input('filter_program_id')) {
-            $subjects->where('subjects.program_id', $programId);
         }
 
         if ($subjectType = request()->input('filter_subject_type')) {
@@ -116,8 +91,6 @@ class SubjectController extends Controller
                             ->orWhere('subjects.code', 'like', "%{$search}%")
                             ->orWhere('subjects.subject_type', 'like', "%{$search}%")
                             ->orWhere('subjects.class_type', 'like', "%{$search}%")
-                            ->orWhere('programs.name', 'like', "%{$search}%")
-                            ->orWhere('programs.code', 'like', "%{$search}%")
                             ->orWhere('departments.name', 'like', "%{$search}%")
                             ->orWhere('departments.code', 'like', "%{$search}%")
                             ->orWhere('branches.name', 'like', "%{$search}%")
@@ -135,7 +108,7 @@ class SubjectController extends Controller
     {
         return response()->json([
             'total' => Subject::count(),
-            'programs_covered' => Subject::query()->distinct('program_id')->count('program_id'),
+            'departments_covered' => Subject::query()->distinct('department_id')->count('department_id'),
         ]);
     }
 
@@ -150,7 +123,7 @@ class SubjectController extends Controller
                 'code' => $subject->code,
                 'subject_type' => $subject->subject_type,
                 'class_type' => $subject->class_type,
-                'program_id' => $subject->program_id,
+                'department_id' => $subject->department_id,
             ]);
         } catch (DecryptException) {
             return response()->json(['message' => 'Invalid subject ID.'], 400);
@@ -216,18 +189,12 @@ class SubjectController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('subjects', 'code')
-                    ->where('program_id', $request->input('program_id'))
+                    ->where('department_id', $request->input('department_id'))
                     ->where('class_type', $request->input('class_type'))
                     ->ignore($subject?->id),
             ],
             'subject_type' => ['required', 'string', Rule::in(self::SUBJECT_TYPES)],
             'class_type' => ['required', 'string', Rule::in(self::CLASS_TYPES)],
-            'program_id' => [
-                'required',
-                'integer',
-                Rule::exists('programs', 'id')
-                    ->where(fn ($query) => $query->where('department_id', $request->input('department_id'))),
-            ],
         ]);
     }
 
@@ -240,10 +207,10 @@ class SubjectController extends Controller
 
     public function downloadImportTemplate()
     {
-        $headers = ['code', 'name', 'branch_code', 'department_code', 'program_code', 'subject_type', 'class_type'];
+        $headers = ['code', 'name', 'branch_code', 'department_code', 'subject_type', 'class_type'];
         $examples = [
-            ['ITC 110', 'Introduction to Computing', 'MNL', 'CCS', 'BSIT', 'MAJOR', 'LEC'],
-            ['ITC 110', 'Introduction to Computing', 'MNL', 'CCS', 'BSIT', 'MAJOR', 'LAB'],
+            ['ITC 110', 'Introduction to Computing', 'MNL', 'CCS', 'MAJOR', 'LEC'],
+            ['ITC 110', 'Introduction to Computing', 'MNL', 'CCS', 'MAJOR', 'LAB'],
         ];
 
         $callback = function () use ($headers, $examples) {
@@ -276,6 +243,8 @@ class SubjectController extends Controller
         return response()->json([
             'imported' => $import->getImportedCount(),
             'skipped'  => $import->getSkippedCount(),
+            'imported_rows' => $import->getImportedRows(),
+            'skipped_rows' => $import->getSkippedRows(),
             'errors'   => $import->getErrors(),
         ]);
     }

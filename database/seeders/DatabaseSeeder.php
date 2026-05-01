@@ -38,7 +38,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BranchSeeder::class,
             DepartmentSeeder::class,
-            ProgramSeeder::class,
             AcademicPeriodSeeder::class,
             BuildingSeeder::class,
             RoomSeeder::class,

@@ -9,7 +9,7 @@ import { LuDoorOpen, LuBuilding2 } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Room() {
-    const { branches = [], buildings = [] } = usePage().props;
+    const { branches = [], departments = [], buildings = [] } = usePage().props;
     const tableRef = useRef(null);
     const [editId, setEditId] = useState(null);
 
@@ -58,7 +58,7 @@ export default function Room() {
                                 text: '<span class="d-flex align-items-center"><i class="icon-base bx bx-file me-1"></i>Csv</span>',
                                 className: "dropdown-item",
                                 exportOptions: {
-                                    columns: [1, 2, 3],
+                                    columns: [1, 2, 3, 4],
                                 }
                             }]
                         }, {
@@ -106,7 +106,7 @@ export default function Room() {
                 },
                 {
                     data: "building_name",
-                    width: "35%",
+                    width: "28%",
                     render: (data, type, row) => `
                         <div class="d-flex flex-column">
                             <span class="fw-medium">${data ?? '-'}</span>
@@ -114,6 +114,26 @@ export default function Room() {
                             <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
                         </div>
                     `,
+                },
+                {
+                    data: "department_assignments",
+                    width: "22%",
+                    render: (data) => {
+                        if (!Array.isArray(data) || data.length === 0) {
+                            return '<span class="text-muted">No departments assigned</span>';
+                        }
+
+                        const badges = data
+                            .map((department) => `<span class="badge bg-label-info" title="${department.name}">${department.code}</span>`)
+                            .join(' ');
+
+                        return `
+                            <div class="d-flex flex-column gap-1">
+                                <div class="d-flex flex-wrap gap-1">${badges}</div>
+                                <small class="text-muted">${data.length} department(s)</small>
+                            </div>
+                        `;
+                    }
                 },
                 {
                     data: null,
@@ -231,6 +251,7 @@ export default function Room() {
                             <th>Code</th>
                             <th>Type</th>
                             <th>Building</th>
+                            <th>Departments</th>
                             <th>Actions</th>
                         </ScrollableTable>
                     </div>
@@ -239,6 +260,7 @@ export default function Room() {
                 <CreateAndEditRoom
                     editId={editId}
                     branches={branches}
+                    departments={departments}
                     buildings={buildings}
                     onSuccess={handleSuccess}
                 />

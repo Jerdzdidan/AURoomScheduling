@@ -109,7 +109,7 @@ export default function Department() {
                     `,
                 },
                 {
-                    data: "programs_count",
+                    data: "subjects_count",
                     width: "12%",
                     render: (data) => `<span class="badge bg-label-primary">${data}</span>`,
                 },
@@ -234,7 +234,7 @@ export default function Department() {
                             <th>Name</th>
                             <th>Code</th>
                             <th>Branch</th>
-                            <th>Programs</th>
+                            <th>Subjects</th>
                             <th>Users</th>
                             <th>Actions</th>
                         </ScrollableTable>

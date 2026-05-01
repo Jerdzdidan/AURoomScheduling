@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\Utilities\AcademicPeriodController;
 use App\Http\Controllers\Admin\Utilities\BranchController;
 use App\Http\Controllers\Admin\Utilities\DepartmentController;
-use App\Http\Controllers\Admin\Utilities\ProgramController;
 use App\Http\Controllers\Admin\Utilities\BuildingController;
 use App\Http\Controllers\Admin\Core\RoomScheduleController;
 use App\Http\Controllers\Admin\Core\SubjectController;
@@ -159,16 +158,6 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::get('{id}', [ProfessorController::class, 'show'])->name('show');
             Route::put('{id}', [ProfessorController::class, 'update'])->name('update');
             Route::delete('delete/{id}', [ProfessorController::class, 'destroy'])->name('delete');
-        });
-
-        Route::prefix('programs')->name('programs.')->group(function () {
-            Route::get('/', [ProgramController::class, 'index'])->name('index');
-            Route::get('data', [ProgramController::class, 'getData'])->name('data');
-            Route::get('stats', [ProgramController::class, 'getStats'])->name('stats');
-            Route::post('store', [ProgramController::class, 'store'])->name('store');
-            Route::get('{id}', [ProgramController::class, 'show'])->name('show');
-            Route::put('{id}', [ProgramController::class, 'update'])->name('update');
-            Route::delete('delete/{id}', [ProgramController::class, 'destroy'])->name('delete');
         });
     });
 });

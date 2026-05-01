@@ -7,16 +7,15 @@ import ScrollableTable from "@/Components/Table/ScrollableTable";
 import CreateAndEditSubject from "./Forms/CreateAndEditSubject";
 import ImportSubjectModal from "./Forms/ImportSubjectModal";
 import FilterSubjectOffcanvas from "./Forms/FilterSubjectOffcanvas";
-import { LuBookText, LuGraduationCap } from "react-icons/lu";
+import { LuBookText, LuLayoutList } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Subject() {
-    const { branches = [], departments = [], programs = [], subjectTypeOptions = [], classTypeOptions = [] } = usePage().props;
+    const { branches = [], departments = [], subjectTypeOptions = [], classTypeOptions = [] } = usePage().props;
     const tableRef = useRef(null);
     const filtersRef = useRef({
         branch_id: '',
         department_id: '',
-        program_id: '',
         subject_type: '',
         class_type: '',
     });
@@ -24,7 +23,6 @@ export default function Subject() {
     const [filters, setFilters] = useState({
         branch_id: '',
         department_id: '',
-        program_id: '',
         subject_type: '',
         class_type: '',
     });
@@ -32,7 +30,7 @@ export default function Subject() {
     const loadStats = () => {
         $.get(route('admin.core.subjects.stats')).done((stats) => {
             $('#total').text(stats.total);
-            $('#programs-covered').text(stats.programs_covered);
+            $('#departments-covered').text(stats.departments_covered);
         });
     };
 
@@ -129,7 +127,6 @@ export default function Subject() {
                 data: function (d) {
                     d.filter_branch_id = filtersRef.current.branch_id;
                     d.filter_department_id = filtersRef.current.department_id;
-                    d.filter_program_id = filtersRef.current.program_id;
                     d.filter_subject_type = filtersRef.current.subject_type;
                     d.filter_class_type = filtersRef.current.class_type;
                 },
@@ -139,13 +136,12 @@ export default function Subject() {
                 { data: "name", width: "30%" },
                 { data: "code", width: "20%" },
                 {
-                    data: "program_name",
+                    data: "department_name",
                     width: "25%",
                     render: (data, type, row) => `
                         <div class="d-flex flex-column">
                             <span class="fw-medium">${data ?? '-'}</span>
-                            <small class="text-muted">${row.program_code ?? ''}</small>
-                            <small class="text-muted">${row.department_code ?? ''}${row.department_name ? ` - ${row.department_name}` : ''}</small>
+                            <small class="text-muted">${row.department_code ?? ''}</small>
                             <small class="text-muted">${row.branch_code ?? ''}${row.branch_name ? ` - ${row.branch_name}` : ''}</small>
                         </div>
                     `,
@@ -276,9 +272,9 @@ export default function Subject() {
                     />
 
                     <StatsCard
-                        id="programs-covered"
-                        title="Programs Covered"
-                        Icon={LuGraduationCap}
+                        id="departments-covered"
+                        title="Departments Covered"
+                        Icon={LuLayoutList}
                         iconSize="28"
                         bgColor="bg-success"
                         className="col-md-6"
@@ -291,7 +287,7 @@ export default function Subject() {
                             <th>Id</th>
                             <th>Name</th>
                             <th>Code</th>
-                            <th>Program</th>
+                            <th>Department</th>
                             <th>Subject Type</th>
                             <th>Class Type</th>
                             <th>Actions</th>
@@ -303,7 +299,6 @@ export default function Subject() {
                     editId={editId}
                     branches={branches}
                     departments={departments}
-                    programs={programs}
                     subjectTypeOptions={subjectTypeOptions}
                     classTypeOptions={classTypeOptions}
                     onSuccess={handleSuccess}
@@ -316,7 +311,6 @@ export default function Subject() {
                     setFilters={setFilters}
                     branches={branches}
                     departments={departments}
-                    programs={programs}
                     subjectTypeOptions={subjectTypeOptions}
                     classTypeOptions={classTypeOptions}
                     onApply={applyFilters}

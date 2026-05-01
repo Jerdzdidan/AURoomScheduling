@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Branch;
 use App\Models\Department;
-use App\Models\Program;
 use App\Models\Subject;
 use Illuminate\Database\Seeder;
 
@@ -12,7 +11,7 @@ class SubjectSeeder extends Seeder
 {
     public function run(): void
     {
-        // branch_code => department_code => program_code => subjects
+        // branch_code => department_code => legacy subject groups
         $subjects = [
             'JSC' => [
                 'SCS' => [
@@ -55,7 +54,7 @@ class SubjectSeeder extends Seeder
                 continue;
             }
 
-            foreach ($departments as $deptCode => $programs) {
+            foreach ($departments as $deptCode => $subjectGroups) {
                 $department = Department::where('code', $deptCode)
                     ->where('branch_id', $branch->id)
                     ->first();
@@ -64,23 +63,15 @@ class SubjectSeeder extends Seeder
                     continue;
                 }
 
-                foreach ($programs as $progCode => $subs) {
-                    $program = Program::where('code', $progCode)
-                        ->where('department_id', $department->id)
-                        ->first();
-
-                    if (!$program) {
-                        continue;
-                    }
-
+                foreach ($subjectGroups as $subs) {
                     foreach ($subs as $sub) {
                         Subject::firstOrCreate(
                             [
                                 'code'       => $sub['code'],
                                 'class_type' => $sub['class_type'],
-                                'program_id' => $program->id,
+                                'department_id' => $department->id,
                             ],
-                            array_merge($sub, ['program_id' => $program->id])
+                            array_merge($sub, ['department_id' => $department->id])
                         );
                     }
                 }

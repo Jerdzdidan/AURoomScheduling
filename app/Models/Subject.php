@@ -11,12 +11,12 @@ class Subject extends Model
         'code',
         'subject_type',
         'class_type',
-        'program_id',
+        'department_id',
     ];
 
-    public function program()
+    public function department()
     {
-        return $this->belongsTo(Program::class);
+        return $this->belongsTo(Department::class);
     }
 
     public function roomSchedules()

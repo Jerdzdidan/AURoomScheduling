@@ -7,7 +7,6 @@ export default function FilterRoomScheduleOffcanvas({
     academicPeriods,
     branches,
     departments,
-    programs,
     subjects,
     rooms,
     dayOptions,
@@ -23,35 +22,33 @@ export default function FilterRoomScheduleOffcanvas({
         );
     }, [departments, filters.branch_id]);
 
-    const filteredPrograms = useMemo(() => {
+    const filteredSubjects = useMemo(() => {
         if (!filters.department_id) {
             return [];
         }
 
-        return programs.filter(
-            (program) => program.department_id?.toString() === filters.department_id?.toString(),
-        );
-    }, [programs, filters.department_id]);
-
-    const filteredSubjects = useMemo(() => {
-        if (!filters.program_id) {
-            return [];
-        }
-
         return subjects.filter(
-            (subject) => subject.program_id?.toString() === filters.program_id?.toString(),
+            (subject) => subject.department_id?.toString() === filters.department_id?.toString(),
         );
-    }, [subjects, filters.program_id]);
+    }, [subjects, filters.department_id]);
 
     const filteredRooms = useMemo(() => {
         if (!filters.branch_id) {
             return [];
         }
 
-        return rooms.filter(
-            (room) => room.branch_id?.toString() === filters.branch_id?.toString(),
-        );
-    }, [rooms, filters.branch_id]);
+        return rooms.filter((room) => {
+            if (room.branch_id?.toString() !== filters.branch_id?.toString()) {
+                return false;
+            }
+
+            if (!filters.department_id) {
+                return true;
+            }
+
+            return (room.department_ids ?? []).includes(filters.department_id?.toString());
+        });
+    }, [rooms, filters.branch_id, filters.department_id]);
 
     const handleApply = () => {
         onApply();
@@ -63,7 +60,6 @@ export default function FilterRoomScheduleOffcanvas({
             academic_period_id: "",
             branch_id: "",
             department_id: "",
-            program_id: "",
             subject_id: "",
             day_of_week: "",
             room_id: "",
@@ -121,7 +117,6 @@ export default function FilterRoomScheduleOffcanvas({
                             ...current,
                             branch_id: value,
                             department_id: "",
-                            program_id: "",
                             subject_id: "",
                             room_id: "",
                         }))
@@ -140,8 +135,8 @@ export default function FilterRoomScheduleOffcanvas({
                         setFilters((current) => ({
                             ...current,
                             department_id: value,
-                            program_id: "",
                             subject_id: "",
+                            room_id: "",
                         }))
                     }
                     options={filteredDepartments}
@@ -151,29 +146,10 @@ export default function FilterRoomScheduleOffcanvas({
                 />
 
                 <SelectField
-                    id="filter-schedule-program"
-                    label="Program"
-                    name="program_id"
-                    placeholder={filters.department_id ? "All programs" : "Select a department first"}
-                    value={filters.program_id}
-                    onChange={(value) =>
-                        setFilters((current) => ({
-                            ...current,
-                            program_id: value,
-                            subject_id: "",
-                        }))
-                    }
-                    options={filteredPrograms}
-                    renderOption={(program) => `${program.code} - ${program.name}`}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
-                    disabled={!filters.department_id}
-                />
-
-                <SelectField
                     id="filter-schedule-subject"
                     label="Subject"
                     name="subject_id"
-                    placeholder={filters.program_id ? "All subjects" : "Select a program first"}
+                    placeholder={filters.department_id ? "All subjects" : "Select a department first"}
                     value={filters.subject_id}
                     onChange={(value) =>
                         setFilters((current) => ({
@@ -184,7 +160,7 @@ export default function FilterRoomScheduleOffcanvas({
                     options={filteredSubjects}
                     renderOption={(subject) => `${subject.code} - ${subject.name}`}
                     dropdownParent="#filterRoomScheduleOffcanvas"
-                    disabled={!filters.program_id}
+                    disabled={!filters.department_id}
                 />
 
                 <SelectField

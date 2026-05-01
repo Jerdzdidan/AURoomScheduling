@@ -2,7 +2,7 @@
 
 namespace App\Imports;
 
-use App\Models\Program;
+use App\Models\Department;
 use App\Models\Subject;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -15,36 +15,35 @@ class SubjectImport implements ToCollection, WithHeadingRow
 
     private int $importedCount = 0;
     private int $skippedCount = 0;
-    private array $errors = [];
+    private array $importedRows = [];
+    private array $skippedRows = [];
 
     /**
-     * Pre-load a lookup map: "BRANCH_CODE|DEPT_CODE|PROG_CODE" => program_id
+     * Pre-load a lookup map: "BRANCH_CODE|DEPT_CODE" => department_id
      */
-    private array $programLookup;
+    private array $departmentLookup;
 
     public function __construct()
     {
-        $this->programLookup = Program::query()
-            ->join('departments', 'programs.department_id', '=', 'departments.id')
+        $this->departmentLookup = Department::query()
             ->join('branches', 'departments.branch_id', '=', 'branches.id')
             ->get([
-                'programs.id',
-                'programs.code as program_code',
+                'departments.id',
                 'departments.code as department_code',
                 'branches.code as branch_code',
             ])
-            ->keyBy(fn ($p) => strtoupper(trim($p->branch_code)) . '|' . strtoupper(trim($p->department_code)) . '|' . strtoupper(trim($p->program_code)))
-            ->map(fn ($p) => $p->id)
+            ->keyBy(fn ($department) => strtoupper(trim($department->branch_code)) . '|' . strtoupper(trim($department->department_code)))
+            ->map(fn ($department) => $department->id)
             ->toArray();
     }
 
     public function collection(Collection $rows): void
     {
-        // Pre-load existing (code, program_id, class_type) combos to detect duplicates
+        // Pre-load existing (code, department_id, class_type) combos to detect duplicates
         $existingCombos = Subject::query()
-            ->select('code', 'program_id', 'class_type')
+            ->select('code', 'department_id', 'class_type')
             ->get()
-            ->map(fn ($s) => strtoupper(trim($s->code)) . '|' . $s->program_id . '|' . strtoupper(trim($s->class_type)))
+            ->map(fn ($s) => strtoupper(trim($s->code)) . '|' . $s->department_id . '|' . strtoupper(trim($s->class_type)))
             ->flip()
             ->toArray();
 
@@ -56,56 +55,59 @@ class SubjectImport implements ToCollection, WithHeadingRow
             $name         = trim($row['name'] ?? '');
             $branchCode   = strtoupper(trim($row['branch_code'] ?? ''));
             $deptCode     = strtoupper(trim($row['department_code'] ?? ''));
-            $programCode  = strtoupper(trim($row['program_code'] ?? ''));
             $subjectType  = strtoupper(trim($row['subject_type'] ?? ''));
             $classType    = strtoupper(trim($row['class_type'] ?? ''));
+            $rowDetails = [
+                'row' => $rowNumber,
+                'code' => $code,
+                'name' => $name,
+                'branch_code' => $branchCode,
+                'department_code' => $deptCode,
+                'subject_type' => $subjectType,
+                'class_type' => $classType,
+            ];
 
-            if (empty($code) || empty($name) || empty($branchCode) || empty($deptCode) || empty($programCode) || empty($subjectType) || empty($classType)) {
-                $this->errors[] = ['row' => $rowNumber, 'message' => 'Missing required fields.'];
-                $this->skippedCount++;
+            if (empty($code) || empty($name) || empty($branchCode) || empty($deptCode) || empty($subjectType) || empty($classType)) {
+                $this->recordSkippedRow($rowDetails, 'Missing required fields.');
                 continue;
             }
 
-            // --- Resolve program ---
-            $lookupKey = "{$branchCode}|{$deptCode}|{$programCode}";
-            $programId = $this->programLookup[$lookupKey] ?? null;
+            // --- Resolve department ---
+            $lookupKey = "{$branchCode}|{$deptCode}";
+            $departmentId = $this->departmentLookup[$lookupKey] ?? null;
 
-            if (!$programId) {
-                $this->errors[] = [
-                    'row' => $rowNumber,
-                    'message' => "No program found for branch '{$branchCode}', department '{$deptCode}', program '{$programCode}'.",
-                ];
-                $this->skippedCount++;
+            if (!$departmentId) {
+                $this->recordSkippedRow(
+                    $rowDetails,
+                    "No department found for branch '{$branchCode}' and department '{$deptCode}'."
+                );
                 continue;
             }
 
             // --- Validate enums ---
             if (!in_array($subjectType, self::SUBJECT_TYPES, true)) {
-                $this->errors[] = [
-                    'row' => $rowNumber,
-                    'message' => "Invalid subject type '{$subjectType}'. Must be MAJOR or MINOR.",
-                ];
-                $this->skippedCount++;
+                $this->recordSkippedRow(
+                    $rowDetails,
+                    "Invalid subject type '{$subjectType}'. Must be MAJOR or MINOR."
+                );
                 continue;
             }
 
             if (!in_array($classType, self::CLASS_TYPES, true)) {
-                $this->errors[] = [
-                    'row' => $rowNumber,
-                    'message' => "Invalid class type '{$classType}'. Must be LEC or LAB.",
-                ];
-                $this->skippedCount++;
+                $this->recordSkippedRow(
+                    $rowDetails,
+                    "Invalid class type '{$classType}'. Must be LEC or LAB."
+                );
                 continue;
             }
 
-            // --- Check duplicate (code + program_id + class_type) ---
-            $comboKey = "{$code}|{$programId}|{$classType}";
+            // --- Check duplicate (code + department_id + class_type) ---
+            $comboKey = "{$code}|{$departmentId}|{$classType}";
             if (isset($existingCombos[$comboKey])) {
-                $this->errors[] = [
-                    'row' => $rowNumber,
-                    'message' => "Subject '{$code}' ({$classType}) already exists under branch '{$branchCode}', department '{$deptCode}', program '{$programCode}'.",
-                ];
-                $this->skippedCount++;
+                $this->recordSkippedRow(
+                    $rowDetails,
+                    "Subject '{$code}' ({$classType}) already exists under branch '{$branchCode}' and department '{$deptCode}'."
+                );
                 continue;
             }
 
@@ -113,7 +115,7 @@ class SubjectImport implements ToCollection, WithHeadingRow
             Subject::create([
                 'code'         => $code,
                 'name'         => $name,
-                'program_id'   => $programId,
+                'department_id'=> $departmentId,
                 'subject_type' => $subjectType,
                 'class_type'   => $classType,
             ]);
@@ -121,7 +123,14 @@ class SubjectImport implements ToCollection, WithHeadingRow
             // Track in memory so later rows in the same file don't duplicate
             $existingCombos[$comboKey] = true;
             $this->importedCount++;
+            $this->importedRows[] = $rowDetails + ['message' => 'Imported successfully.'];
         }
+    }
+
+    private function recordSkippedRow(array $rowDetails, string $message): void
+    {
+        $this->skippedRows[] = $rowDetails + ['message' => $message];
+        $this->skippedCount++;
     }
 
     public function getImportedCount(): int
@@ -134,8 +143,18 @@ class SubjectImport implements ToCollection, WithHeadingRow
         return $this->skippedCount;
     }
 
+    public function getImportedRows(): array
+    {
+        return $this->importedRows;
+    }
+
+    public function getSkippedRows(): array
+    {
+        return $this->skippedRows;
+    }
+
     public function getErrors(): array
     {
-        return $this->errors;
+        return $this->skippedRows;
     }
 }

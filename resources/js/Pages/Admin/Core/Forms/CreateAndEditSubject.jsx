@@ -11,10 +11,9 @@ const getInitialValues = () => ({
     code: '',
     subject_type: '',
     class_type: '',
-    program_id: '',
 });
 
-export default function CreateAndEditSubject({ editId, branches, departments, programs, subjectTypeOptions, classTypeOptions, onSuccess }) {
+export default function CreateAndEditSubject({ editId, branches, departments, subjectTypeOptions, classTypeOptions, onSuccess }) {
     const isEditing = !!editId;
     const { data, setData, post, put, processing, errors, clearErrors } = useForm(getInitialValues());
 
@@ -26,14 +25,6 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
         return departments.filter((department) => department.branch_id?.toString() === data.branch_id?.toString());
     }, [departments, data.branch_id]);
 
-    const filteredPrograms = useMemo(() => {
-        if (!data.department_id) {
-            return [];
-        }
-
-        return programs.filter((program) => program.department_id?.toString() === data.department_id?.toString());
-    }, [programs, data.department_id]);
-
     useEffect(() => {
         if (!editId) {
             setData(getInitialValues());
@@ -43,24 +34,23 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
 
         $.get(route('admin.core.subjects.show', editId))
             .done((subject) => {
-                const selectedProgram = programs.find(
-                    (program) => program.id?.toString() === subject.program_id?.toString()
+                const selectedDepartment = departments.find(
+                    (department) => department.id?.toString() === subject.department_id?.toString()
                 );
 
                 setData({
-                    branch_id: selectedProgram?.branch_id?.toString() ?? '',
-                    department_id: selectedProgram?.department_id?.toString() ?? '',
+                    branch_id: selectedDepartment?.branch_id?.toString() ?? '',
+                    department_id: subject.department_id?.toString() ?? '',
                     name: subject.name ?? '',
                     code: subject.code ?? '',
                     subject_type: subject.subject_type ?? '',
                     class_type: subject.class_type ?? '',
-                    program_id: subject.program_id?.toString() ?? '',
                 });
             })
             .fail(() => {
                 toastr.error('Failed to load subject details.');
             });
-    }, [editId]);
+    }, [clearErrors, departments, editId, setData]);
 
     useEffect(() => {
         const $offcanvas = $('#subjectOffcanvas');
@@ -121,7 +111,6 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
                         ...current,
                         branch_id: val,
                         department_id: '',
-                        program_id: '',
                     }));
                 }}
                 options={branches}
@@ -136,13 +125,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
                 name="department_id"
                 placeholder={data.branch_id ? 'Select a department' : 'Select a branch first'}
                 value={data.department_id}
-                onChange={(val) => {
-                    setData((current) => ({
-                        ...current,
-                        department_id: val,
-                        program_id: '',
-                    }));
-                }}
+                onChange={(val) => setData('department_id', val)}
                 options={filteredDepartments}
                 renderOption={(department) => `${department.code} - ${department.name}`}
                 dropdownParent="#subjectOffcanvas"
@@ -151,23 +134,6 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
                     ? 'No departments found for the selected branch.'
                     : 'Select a branch first before choosing a department.'}
                 disabled={!data.branch_id}
-            />
-
-            <SelectField
-                id="subject-program"
-                label="Program"
-                name="program_id"
-                placeholder={data.department_id ? 'Select a program' : 'Select a department first'}
-                value={data.program_id}
-                onChange={(val) => setData('program_id', val)}
-                options={filteredPrograms}
-                renderOption={(program) => `${program.code} - ${program.name}`}
-                dropdownParent="#subjectOffcanvas"
-                error={errors.program_id}
-                help={data.department_id
-                    ? 'No programs found for the selected department.'
-                    : 'Select a department first before choosing a program.'}
-                disabled={!data.department_id}
             />
 
             <InputField
@@ -215,7 +181,6 @@ export default function CreateAndEditSubject({ editId, branches, departments, pr
                 dropdownParent="#subjectOffcanvas"
                 error={errors.class_type}
             />
-
         </OffcanvasForm>
     );
 }

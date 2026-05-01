@@ -7,7 +7,6 @@ use App\Models\AcademicPeriod;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Professor;
-use App\Models\Program;
 use App\Models\Room;
 use App\Models\RoomSchedule;
 use App\Models\Subject;
@@ -58,40 +57,17 @@ class RoomScheduleController extends Controller
                 'branches.code as branch_code',
             ]);
 
-        $programs = Program::query()
-            ->join('departments', 'programs.department_id', '=', 'departments.id')
-            ->join('branches', 'departments.branch_id', '=', 'branches.id')
-            ->orderBy('branches.name')
-            ->orderBy('departments.name')
-            ->orderBy('programs.name')
-            ->get([
-                'programs.id',
-                'programs.name',
-                'programs.code',
-                'programs.department_id',
-                'departments.name as department_name',
-                'departments.code as department_code',
-                'departments.branch_id',
-                'branches.name as branch_name',
-                'branches.code as branch_code',
-            ]);
-
         $subjects = Subject::query()
-            ->join('programs', 'subjects.program_id', '=', 'programs.id')
-            ->join('departments', 'programs.department_id', '=', 'departments.id')
+            ->join('departments', 'subjects.department_id', '=', 'departments.id')
             ->join('branches', 'departments.branch_id', '=', 'branches.id')
             ->orderBy('branches.name')
             ->orderBy('departments.name')
-            ->orderBy('programs.name')
             ->orderBy('subjects.name')
             ->get([
                 'subjects.id',
                 'subjects.name',
                 'subjects.code',
-                'subjects.program_id',
-                'programs.name as program_name',
-                'programs.code as program_code',
-                'programs.department_id',
+                'subjects.department_id',
                 'departments.name as department_name',
                 'departments.code as department_code',
                 'departments.branch_id',
@@ -100,6 +76,7 @@ class RoomScheduleController extends Controller
             ]);
 
         $rooms = Room::query()
+            ->with(['departments:id'])
             ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
             ->join('branches', 'buildings.branch_id', '=', 'branches.id')
             ->orderBy('branches.name')
@@ -115,7 +92,20 @@ class RoomScheduleController extends Controller
                 'branches.id as branch_id',
                 'branches.name as branch_name',
                 'branches.code as branch_code',
-            ]);
+            ])
+            ->map(fn (Room $room) => [
+                'id' => $room->id,
+                'code' => $room->code,
+                'type' => $room->type,
+                'building_id' => $room->building_id,
+                'building_name' => $room->building_name,
+                'building_code' => $room->building_code,
+                'branch_id' => $room->branch_id,
+                'branch_name' => $room->branch_name,
+                'branch_code' => $room->branch_code,
+                'department_ids' => $room->departments->pluck('id')->map(fn ($id) => (string) $id)->values()->all(),
+            ])
+            ->values();
 
         $professors = Professor::query()
             ->orderBy('name')
@@ -125,7 +115,6 @@ class RoomScheduleController extends Controller
             'academicPeriods' => $academicPeriods,
             'branches' => $branches,
             'departments' => $departments,
-            'programs' => $programs,
             'subjects' => $subjects,
             'rooms' => $rooms,
             'professors' => $professors,
@@ -142,8 +131,7 @@ class RoomScheduleController extends Controller
         $roomSchedules = RoomSchedule::query()
             ->join('academic_periods', 'room_schedules.academic_period_id', '=', 'academic_periods.id')
             ->join('subjects', 'room_schedules.subject_id', '=', 'subjects.id')
-            ->join('programs', 'subjects.program_id', '=', 'programs.id')
-            ->join('departments', 'programs.department_id', '=', 'departments.id')
+            ->join('departments', 'subjects.department_id', '=', 'departments.id')
             ->join('branches', 'departments.branch_id', '=', 'branches.id')
             ->join('rooms', 'room_schedules.room_id', '=', 'rooms.id')
             ->leftJoin('buildings', 'rooms.building_id', '=', 'buildings.id')
@@ -162,8 +150,6 @@ class RoomScheduleController extends Controller
                 'academic_periods.is_current as is_current_period',
                 'subjects.name as subject_name',
                 'subjects.code as subject_code',
-                'programs.name as program_name',
-                'programs.code as program_code',
                 'departments.name as department_name',
                 'departments.code as department_code',
                 'branches.name as branch_name',
@@ -187,10 +173,6 @@ class RoomScheduleController extends Controller
             $roomSchedules->where('departments.id', $departmentId);
         }
 
-        if ($programId = request()->input('filter_program_id')) {
-            $roomSchedules->where('programs.id', $programId);
-        }
-
         if ($subjectId = request()->input('filter_subject_id')) {
             $roomSchedules->where('subjects.id', $subjectId);
         }
@@ -212,8 +194,6 @@ class RoomScheduleController extends Controller
                         $q->where('academic_periods.name', 'like', "%{$search}%")
                             ->orWhere('subjects.name', 'like', "%{$search}%")
                             ->orWhere('subjects.code', 'like', "%{$search}%")
-                            ->orWhere('programs.name', 'like', "%{$search}%")
-                            ->orWhere('programs.code', 'like', "%{$search}%")
                             ->orWhere('departments.name', 'like', "%{$search}%")
                             ->orWhere('departments.code', 'like', "%{$search}%")
                             ->orWhere('branches.name', 'like', "%{$search}%")
@@ -257,6 +237,12 @@ class RoomScheduleController extends Controller
         $validated = $request->validate([
             'academic_period_id' => ['required', 'integer', 'exists:academic_periods,id'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'department_id' => [
+                'required',
+                'integer',
+                Rule::exists('departments', 'id')
+                    ->where(fn($query) => $query->where('branch_id', $request->input('branch_id'))),
+            ],
             'day_of_week' => ['required', 'string', Rule::in(array_keys(self::DAY_LABELS))],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
@@ -284,7 +270,8 @@ class RoomScheduleController extends Controller
 
         $branchRooms = Room::query()
             ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.branch_id', $validated['branch_id']);
+            ->where('buildings.branch_id', $validated['branch_id'])
+            ->whereHas('departments', fn($query) => $query->whereKey($validated['department_id']));
 
         $totalRooms = (clone $branchRooms)->count();
 
@@ -388,17 +375,11 @@ class RoomScheduleController extends Controller
                 Rule::exists('departments', 'id')
                     ->where(fn($query) => $query->where('branch_id', $request->input('branch_id'))),
             ],
-            'program_id' => [
-                'required',
-                'integer',
-                Rule::exists('programs', 'id')
-                    ->where(fn($query) => $query->where('department_id', $request->input('department_id'))),
-            ],
             'subject_id' => [
                 'required',
                 'integer',
                 Rule::exists('subjects', 'id')
-                    ->where(fn($query) => $query->where('program_id', $request->input('program_id'))),
+                    ->where(fn($query) => $query->where('department_id', $request->input('department_id'))),
             ],
             'room_id' => ['required', 'integer', 'exists:rooms,id'],
             'section' => ['required', 'string', 'max:255'],
@@ -438,6 +419,17 @@ class RoomScheduleController extends Controller
         if (!$roomBelongsToBranch) {
             throw ValidationException::withMessages([
                 'room_id' => ['The selected room does not belong to the chosen branch.'],
+            ]);
+        }
+
+        $roomAssignedToDepartment = Room::query()
+            ->whereKey($validated['room_id'])
+            ->whereHas('departments', fn($query) => $query->whereKey($validated['department_id']))
+            ->exists();
+
+        if (!$roomAssignedToDepartment) {
+            throw ValidationException::withMessages([
+                'room_id' => ['The selected room is not assigned to the chosen department.'],
             ]);
         }
 

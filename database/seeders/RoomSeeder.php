@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Branch;
 use App\Models\Building;
+use App\Models\Department;
 use App\Models\Room;
 use Illuminate\Database\Seeder;
 
@@ -57,6 +58,11 @@ class RoomSeeder extends Seeder
                 continue;
             }
 
+            $departmentIds = Department::query()
+                ->where('branch_id', $branch->id)
+                ->pluck('id')
+                ->all();
+
             foreach ($buildings as $buildingCode => $rms) {
                 $building = Building::where('code', $buildingCode)
                     ->where('branch_id', $branch->id)
@@ -67,10 +73,14 @@ class RoomSeeder extends Seeder
                 }
 
                 foreach ($rms as $room) {
-                    Room::firstOrCreate(
+                    $roomModel = Room::firstOrCreate(
                         ['code' => $room['code'], 'building_id' => $building->id],
                         array_merge($room, ['building_id' => $building->id])
                     );
+
+                    if ($departmentIds) {
+                        $roomModel->departments()->syncWithoutDetaching($departmentIds);
+                    }
                 }
             }
         }

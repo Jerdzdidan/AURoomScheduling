@@ -10,7 +10,7 @@ const WIZARD_STEPS = [
     {
         id: "course-details",
         title: "Course Details",
-        subtitle: "Branch, department, program, and subject",
+        subtitle: "Branch, department, and subject",
         icon: "bx bx-book-open",
     },
     {
@@ -31,7 +31,6 @@ const getInitialValues = (currentAcademicPeriodId) => ({
     academic_period_id: currentAcademicPeriodId?.toString() ?? "",
     branch_id: "",
     department_id: "",
-    program_id: "",
     subject_id: "",
     professor_id: "",
     room_id: "",
@@ -80,7 +79,7 @@ const extractAjaxError = (xhr, fallbackMessage) => {
 };
 
 const getErrorStep = (errors) => {
-    if (errors.branch_id || errors.department_id || errors.program_id || errors.subject_id || errors.academic_period_id) {
+    if (errors.branch_id || errors.department_id || errors.subject_id || errors.academic_period_id) {
         return 0;
     }
 
@@ -137,7 +136,6 @@ export default function CreateAndEditRoomSchedule({
     academicPeriods,
     branches,
     departments,
-    programs,
     subjects,
     professors,
     currentAcademicPeriod,
@@ -172,21 +170,13 @@ export default function CreateAndEditRoomSchedule({
         return departments.filter((department) => department.branch_id?.toString() === data.branch_id?.toString());
     }, [departments, data.branch_id]);
 
-    const filteredPrograms = useMemo(() => {
+    const filteredSubjects = useMemo(() => {
         if (!data.department_id) {
             return [];
         }
 
-        return programs.filter((program) => program.department_id?.toString() === data.department_id?.toString());
-    }, [programs, data.department_id]);
-
-    const filteredSubjects = useMemo(() => {
-        if (!data.program_id) {
-            return [];
-        }
-
-        return subjects.filter((subject) => subject.program_id?.toString() === data.program_id?.toString());
-    }, [subjects, data.program_id]);
+        return subjects.filter((subject) => subject.department_id?.toString() === data.department_id?.toString());
+    }, [subjects, data.department_id]);
 
     const academicPeriodMap = useMemo(
         () => new Map(academicPeriods.map((period) => [period.id?.toString(), period])),
@@ -201,11 +191,6 @@ export default function CreateAndEditRoomSchedule({
     const departmentMap = useMemo(
         () => new Map(departments.map((department) => [department.id?.toString(), department])),
         [departments],
-    );
-
-    const programMap = useMemo(
-        () => new Map(programs.map((program) => [program.id?.toString(), program])),
-        [programs],
     );
 
     const subjectMap = useMemo(
@@ -233,7 +218,6 @@ export default function CreateAndEditRoomSchedule({
 
     const selectedBranch = branchMap.get(data.branch_id?.toString());
     const selectedDepartment = departmentMap.get(data.department_id?.toString());
-    const selectedProgram = programMap.get(data.program_id?.toString());
     const selectedSubject = subjectMap.get(data.subject_id?.toString());
     const selectedProfessor = professorMap.get(data.professor_id?.toString());
     const selectedRoom = useMemo(
@@ -245,6 +229,7 @@ export default function CreateAndEditRoomSchedule({
         () => [
             data.academic_period_id,
             data.branch_id,
+            data.department_id,
             data.day_of_week,
             data.start_time,
             data.end_time,
@@ -253,6 +238,7 @@ export default function CreateAndEditRoomSchedule({
         [
             data.academic_period_id,
             data.branch_id,
+            data.department_id,
             data.day_of_week,
             data.start_time,
             data.end_time,
@@ -263,6 +249,7 @@ export default function CreateAndEditRoomSchedule({
     const canLoadAvailability = Boolean(
         data.academic_period_id
         && data.branch_id
+        && data.department_id
         && data.day_of_week
         && data.start_time
         && data.end_time
@@ -288,7 +275,6 @@ export default function CreateAndEditRoomSchedule({
                 data.academic_period_id
                 && data.branch_id
                 && data.department_id
-                && data.program_id
                 && data.subject_id,
             );
         }
@@ -343,10 +329,6 @@ export default function CreateAndEditRoomSchedule({
             }
             if (!data.department_id) {
                 setError("department_id", "Select a department.");
-                hasStepError = true;
-            }
-            if (!data.program_id) {
-                setError("program_id", "Select a program.");
                 hasStepError = true;
             }
             if (!data.subject_id) {
@@ -446,6 +428,7 @@ export default function CreateAndEditRoomSchedule({
         $.get(route("admin.core.room-schedules.available-rooms"), {
             academic_period_id: data.academic_period_id,
             branch_id: data.branch_id,
+            department_id: data.department_id,
             day_of_week: data.day_of_week,
             start_time: data.start_time,
             end_time: data.end_time,
@@ -505,7 +488,6 @@ export default function CreateAndEditRoomSchedule({
                     academic_period_id: roomSchedule.academic_period_id?.toString() ?? "",
                     branch_id: scheduleSubject?.branch_id?.toString() ?? "",
                     department_id: scheduleSubject?.department_id?.toString() ?? "",
-                    program_id: scheduleSubject?.program_id?.toString() ?? "",
                     subject_id: roomSchedule.subject_id?.toString() ?? "",
                     room_id: roomSchedule.room_id?.toString() ?? "",
                     professor_id: roomSchedule.professor_id?.toString() ?? "",
@@ -601,10 +583,6 @@ export default function CreateAndEditRoomSchedule({
                 <SummaryItem
                     label="Department"
                     value={selectedDepartment ? `${selectedDepartment.code} - ${selectedDepartment.name}` : ""}
-                />
-                <SummaryItem
-                    label="Program"
-                    value={selectedProgram ? `${selectedProgram.code} - ${selectedProgram.name}` : ""}
                 />
                 <SummaryItem
                     label="Subject"
@@ -718,14 +696,12 @@ export default function CreateAndEditRoomSchedule({
                                 onChange={(val) => {
                                     clearErrors("branch_id");
                                     clearErrors("department_id");
-                                    clearErrors("program_id");
                                     clearErrors("subject_id");
                                     clearErrors("room_id");
                                     setData((current) => ({
                                         ...current,
                                         branch_id: val,
                                         department_id: "",
-                                        program_id: "",
                                         subject_id: "",
                                         room_id: "",
                                     }));
@@ -745,13 +721,11 @@ export default function CreateAndEditRoomSchedule({
                                 value={data.department_id}
                                 onChange={(val) => {
                                     clearErrors("department_id");
-                                    clearErrors("program_id");
                                     clearErrors("subject_id");
                                     clearErrors("room_id");
                                     setData((current) => ({
                                         ...current,
                                         department_id: val,
-                                        program_id: "",
                                         subject_id: "",
                                         room_id: "",
                                     }));
@@ -768,38 +742,10 @@ export default function CreateAndEditRoomSchedule({
                             />
 
                             <SelectField
-                                id="schedule-program"
-                                label="Program"
-                                name="program_id"
-                                placeholder={data.department_id ? "Select a program" : "Select a department first"}
-                                value={data.program_id}
-                                onChange={(val) => {
-                                    clearErrors("program_id");
-                                    clearErrors("subject_id");
-                                    clearErrors("room_id");
-                                    setData((current) => ({
-                                        ...current,
-                                        program_id: val,
-                                        subject_id: "",
-                                        room_id: "",
-                                    }));
-                                    resetAvailabilityState();
-                                }}
-                                options={filteredPrograms}
-                                renderOption={(program) => `${program.code} - ${program.name}`}
-                                dropdownParent="#roomScheduleModal"
-                                error={errors.program_id}
-                                help={data.department_id
-                                    ? "No programs found for the selected department."
-                                    : "Select a department first before choosing a program."}
-                                disabled={!data.department_id}
-                            />
-
-                            <SelectField
                                 id="schedule-subject"
                                 label="Subject"
                                 name="subject_id"
-                                placeholder={data.program_id ? "Select a subject" : "Select a program first"}
+                                placeholder={data.department_id ? "Select a subject" : "Select a department first"}
                                 value={data.subject_id}
                                 onChange={(val) => {
                                     clearErrors("subject_id");
@@ -815,10 +761,10 @@ export default function CreateAndEditRoomSchedule({
                                 renderOption={(subject) => `${subject.code} - ${subject.name}`}
                                 dropdownParent="#roomScheduleModal"
                                 error={errors.subject_id}
-                                help={data.program_id
-                                    ? "No subjects found for the selected program."
-                                    : "Select a program first before choosing a subject."}
-                                disabled={!data.program_id}
+                                help={data.department_id
+                                    ? "No subjects found for the selected department."
+                                    : "Select a department first before choosing a subject."}
+                                disabled={!data.department_id}
                             />
                         </div>
 
@@ -836,6 +782,7 @@ export default function CreateAndEditRoomSchedule({
                             <i className="bx bx-info-circle fs-5 mt-1"></i>
                             <div>
                                 Rooms on the next step will be filtered using the chosen branch, day, and time window.
+                                Only rooms assigned to the selected department will appear.
                             </div>
                         </div>
 
@@ -987,6 +934,10 @@ export default function CreateAndEditRoomSchedule({
                                     <span className="fw-semibold">
                                         {selectedBranch?.name || "the selected branch"}
                                     </span>{" "}
+                                    for{" "}
+                                    <span className="fw-semibold">
+                                        {selectedDepartment?.name || "the selected department"}
+                                    </span>{" "}
                                     on{" "}
                                     <span className="fw-semibold">
                                         {dayLabels[data.day_of_week] ?? "the selected day"}
@@ -1027,7 +978,7 @@ export default function CreateAndEditRoomSchedule({
                                     {loadingAvailableRooms ? "Checking room availability..." : "Preparing room availability check..."}
                                 </div>
                                 <div className="text-muted small mt-1">
-                                    This checks the selected branch and time slot against saved schedules.
+                                    This checks the selected branch, department assignment, and time slot against saved schedules.
                                 </div>
                             </div>
                         )}
@@ -1041,8 +992,8 @@ export default function CreateAndEditRoomSchedule({
                         {!loadingAvailableRooms && availabilityStatus === "success" && !availabilityError && availableRooms.length === 0 && (
                             <div className="alert alert-warning" role="alert">
                                 {availabilityMeta.total_rooms === 0
-                                    ? "No rooms are registered yet for this branch. Add rooms first in Utilities > Room."
-                                    : "No rooms are currently available for that branch, day, and time range. Try another schedule window."}
+                                    ? "No rooms are assigned yet for this department in the selected branch. Update room assignments first in Utilities > Room."
+                                    : "No assigned rooms are currently available for that branch, department, day, and time range. Try another schedule window."}
                             </div>
                         )}
 

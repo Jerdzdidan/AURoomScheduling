@@ -3,7 +3,7 @@ import SidebarItem from "@/Components/Sidebar/SidebarItem";
 import Bar from "@/Components/Sidebar/Bar";
 import {
     LuCalendarRange, LuHouse, LuBookText,
-    LuSchool, LuUniversity, LuDoorOpen, LuGraduationCap, LuBuilding2,
+    LuSchool, LuUniversity, LuDoorOpen, LuBuilding2,
     LuLayoutList, LuUsers, LuIdCard
 } from "react-icons/lu";
 
@@ -105,12 +105,6 @@ function Admin() {
                 routeName="admin.utilities.professors.index"
                 Icon={LuIdCard}
                 name="Professors"
-            />
-
-            <SidebarItem
-                routeName="admin.utilities.programs.index"
-                Icon={LuGraduationCap}
-                name="Programs"
             />
         </Bar>
     );

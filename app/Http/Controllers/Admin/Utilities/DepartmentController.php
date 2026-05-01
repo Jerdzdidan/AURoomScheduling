@@ -34,7 +34,7 @@ class DepartmentController extends Controller
                 'branches.name as branch_name',
                 'branches.code as branch_code',
             ])
-            ->withCount(['programs', 'users']);
+            ->withCount(['subjects', 'users']);
 
         return DataTables::of($departments)
             ->filter(function ($query) {
@@ -103,10 +103,10 @@ class DepartmentController extends Controller
         try {
             $department = $this->findDepartmentOrFail($id);
 
-            if ($department->programs()->exists()) {
+            if ($department->subjects()->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'This department cannot be deleted while it still has programs.',
+                    'message' => 'This department cannot be deleted while it still has subjects.',
                 ], 422);
             }
 

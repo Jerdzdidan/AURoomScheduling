@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import OffcanvasForm from '@/Components/Form/OffcanvasForm';
 import InputField from '@/Components/Input/InputField';
 import SelectField from '@/Components/Input/SelectField';
@@ -10,11 +10,13 @@ const getInitialValues = () => ({
     room_number: '',
     type: '',
     building_id: '',
+    department_ids: [],
 });
 
-export default function CreateAndEditRoom({ editId, branches, buildings, onSuccess }) {
+export default function CreateAndEditRoom({ editId, branches, departments, buildings, onSuccess }) {
     const isEditing = !!editId;
     const { data, setData, post, put, processing, errors, clearErrors } = useForm(getInitialValues());
+    const [departmentPickerValue, setDepartmentPickerValue] = useState('');
 
     const filteredBuildings = useMemo(() => {
         if (!data.branch_id) {
@@ -23,6 +25,26 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
 
         return buildings.filter((building) => building.branch_id?.toString() === data.branch_id?.toString());
     }, [buildings, data.branch_id]);
+
+    const filteredDepartments = useMemo(() => {
+        if (!data.branch_id) {
+            return [];
+        }
+
+        return departments.filter((department) => department.branch_id?.toString() === data.branch_id?.toString());
+    }, [data.branch_id, departments]);
+
+    const selectedDepartments = useMemo(() => {
+        const selectedDepartmentIds = new Set((data.department_ids ?? []).map((id) => id?.toString()));
+
+        return filteredDepartments.filter((department) => selectedDepartmentIds.has(department.id?.toString()));
+    }, [data.department_ids, filteredDepartments]);
+
+    const availableDepartments = useMemo(() => {
+        const selectedDepartmentIds = new Set((data.department_ids ?? []).map((id) => id?.toString()));
+
+        return filteredDepartments.filter((department) => !selectedDepartmentIds.has(department.id?.toString()));
+    }, [data.department_ids, filteredDepartments]);
 
     useEffect(() => {
         if (!editId) {
@@ -42,6 +64,7 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
                     room_number: roomNumber,
                     type: room.type ?? '',
                     building_id: room.building_id?.toString() ?? '',
+                    department_ids: room.department_ids?.map((departmentId) => departmentId?.toString()) ?? [],
                 });
             })
             .fail(() => {
@@ -54,6 +77,7 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
 
         $offcanvas.on('hidden.bs.offcanvas', () => {
             setData(getInitialValues());
+            setDepartmentPickerValue('');
             clearErrors();
         });
 
@@ -80,6 +104,22 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
             : `${branchCode}-${buildingCode}-`;
     };
 
+    const toggleDepartment = (departmentId) => {
+        const normalizedDepartmentId = departmentId?.toString();
+
+        setData((current) => {
+            const currentDepartmentIds = current.department_ids ?? [];
+            const isSelected = currentDepartmentIds.includes(normalizedDepartmentId);
+
+            return {
+                ...current,
+                department_ids: isSelected
+                    ? currentDepartmentIds.filter((id) => id !== normalizedDepartmentId)
+                    : [...currentDepartmentIds, normalizedDepartmentId],
+            };
+        });
+    };
+
     const handleRoomNumberChange = (e) => {
         const val = e.target.value.toUpperCase();
         setData({
@@ -97,12 +137,38 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
         });
     };
 
+    const handleDepartmentSelect = (departmentId) => {
+        setDepartmentPickerValue(departmentId);
+
+        if (!departmentId) {
+            return;
+        }
+
+        const normalizedDepartmentId = departmentId.toString();
+
+        setData((current) => {
+            const currentDepartmentIds = current.department_ids ?? [];
+
+            if (currentDepartmentIds.includes(normalizedDepartmentId)) {
+                return current;
+            }
+
+            return {
+                ...current,
+                department_ids: [...currentDepartmentIds, normalizedDepartmentId],
+            };
+        });
+
+        setDepartmentPickerValue('');
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
         const options = {
             onSuccess: () => {
                 setData(getInitialValues());
+                setDepartmentPickerValue('');
                 $('#roomOffcanvas').offcanvas('hide');
                 toastr.success(
                     isEditing
@@ -156,8 +222,10 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
                         ...data,
                         branch_id: val,
                         building_id: '',
-                        code: updateRoomCode('', data.room_number),
+                        code: '',
+                        department_ids: [],
                     });
+                    setDepartmentPickerValue('');
                 }}
                 options={branches}
                 dropdownParent="#roomOffcanvas"
@@ -181,6 +249,84 @@ export default function CreateAndEditRoom({ editId, branches, buildings, onSucce
                     : 'Select a branch first before choosing a building.'}
                 disabled={!data.branch_id}
             />
+
+            <div className="mb-3">
+                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                    <div>
+                        <label className="form-label mb-1">Assigned Departments</label>
+                        <div className="form-text mt-0">
+                            Rooms only appear in scheduling for the departments assigned here.
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setData('department_ids', [])}
+                        disabled={!data.department_ids?.length}
+                    >
+                        Clear
+                    </button>
+                </div>
+
+                <div
+                    className={`border rounded p-3 ${errors.department_ids ? 'border-danger' : ''}`}
+                    style={{ minHeight: '120px' }}
+                >
+                    {selectedDepartments.length > 0 && (
+                        <div className="d-flex flex-wrap gap-2 mb-3">
+                            {selectedDepartments.map((department) => (
+                                <span
+                                    key={department.id}
+                                    className="badge bg-primary d-inline-flex align-items-center gap-2 py-2 px-3"
+                                >
+                                    <span>{department.code} - {department.name}</span>
+                                    <button
+                                        type="button"
+                                        className="btn p-0 border-0 bg-transparent text-white d-inline-flex align-items-center"
+                                        onClick={() => toggleDepartment(department.id)}
+                                        aria-label={`Remove ${department.code}`}
+                                        title={`Remove ${department.code}`}
+                                        style={{ lineHeight: 1 }}
+                                    >
+                                        <i className="bx bx-x fs-5" />
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
+                    <SelectField
+                        id="room-department-picker"
+                        label=""
+                        name="department_picker"
+                        placeholder={data.branch_id ? 'Search and add a department' : 'Select a branch first'}
+                        value={departmentPickerValue}
+                        onChange={handleDepartmentSelect}
+                        options={availableDepartments}
+                        renderOption={(department) => `${department.code} - ${department.name}`}
+                        dropdownParent="#roomOffcanvas"
+                        disabled={!data.branch_id || !availableDepartments.length}
+                        help={data.branch_id
+                            ? availableDepartments.length
+                                ? ''
+                                : 'All departments in this branch are already assigned.'
+                            : 'Select a branch first before assigning departments.'}
+                    />
+
+                    <div className="form-text mt-1">
+                        {filteredDepartments.length
+                            ? `${selectedDepartments.length} of ${filteredDepartments.length} department(s) assigned.`
+                            : data.branch_id
+                                ? 'No departments found for the selected branch.'
+                                : ''}
+                    </div>
+                </div>
+
+                {errors.department_ids && (
+                    <div className="invalid-feedback d-block">{errors.department_ids}</div>
+                )}
+            </div>
 
             <InputField
                 id="room-number"

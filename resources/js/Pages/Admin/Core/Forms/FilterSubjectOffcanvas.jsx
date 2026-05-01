@@ -6,24 +6,17 @@ export default function FilterSubjectOffcanvas({
     setFilters,
     branches,
     departments,
-    programs,
     subjectTypeOptions,
     classTypeOptions,
     onApply,
 }) {
     const filteredDepartments = useMemo(() => {
         if (!filters.branch_id) return [];
+
         return departments.filter(
-            (d) => d.branch_id?.toString() === filters.branch_id?.toString()
+            (department) => department.branch_id?.toString() === filters.branch_id?.toString()
         );
     }, [departments, filters.branch_id]);
-
-    const filteredPrograms = useMemo(() => {
-        if (!filters.department_id) return [];
-        return programs.filter(
-            (p) => p.department_id?.toString() === filters.department_id?.toString()
-        );
-    }, [programs, filters.department_id]);
 
     const handleApply = () => {
         onApply();
@@ -34,7 +27,6 @@ export default function FilterSubjectOffcanvas({
         const cleared = {
             branch_id: '',
             department_id: '',
-            program_id: '',
             subject_type: '',
             class_type: '',
         };
@@ -75,7 +67,6 @@ export default function FilterSubjectOffcanvas({
                             ...prev,
                             branch_id: val,
                             department_id: '',
-                            program_id: '',
                         }))
                     }
                     options={branches}
@@ -92,28 +83,12 @@ export default function FilterSubjectOffcanvas({
                         setFilters((prev) => ({
                             ...prev,
                             department_id: val,
-                            program_id: '',
                         }))
                     }
                     options={filteredDepartments}
-                    renderOption={(d) => `${d.code} - ${d.name}`}
+                    renderOption={(department) => `${department.code} - ${department.name}`}
                     dropdownParent="#filterSubjectOffcanvas"
                     disabled={!filters.branch_id}
-                />
-
-                <SelectField
-                    id="filter-program"
-                    label="Program"
-                    name="program_id"
-                    placeholder={filters.department_id ? 'All programs' : 'Select a department first'}
-                    value={filters.program_id}
-                    onChange={(val) =>
-                        setFilters((prev) => ({ ...prev, program_id: val }))
-                    }
-                    options={filteredPrograms}
-                    renderOption={(p) => `${p.code} - ${p.name}`}
-                    dropdownParent="#filterSubjectOffcanvas"
-                    disabled={!filters.department_id}
                 />
 
                 <SelectField
@@ -142,7 +117,6 @@ export default function FilterSubjectOffcanvas({
                     dropdownParent="#filterSubjectOffcanvas"
                 />
 
-                {/* Actions */}
                 <div className="pt-2">
                     <div className="d-flex gap-2">
                         <button

@@ -17,9 +17,14 @@ class Department extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function programs()
+    public function subjects()
     {
-        return $this->hasMany(Program::class);
+        return $this->hasMany(Subject::class);
+    }
+
+    public function rooms()
+    {
+        return $this->belongsToMany(Room::class);
     }
 
     public function users()
