@@ -84,7 +84,7 @@ export default function SelectField({
         } else {
             $select.val(null).trigger('change.select2');
         }
-    }, [value]);
+    }, [value, options]);
 
     useEffect(() => {
         const $select = $(selectRef.current);

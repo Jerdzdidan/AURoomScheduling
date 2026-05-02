@@ -1,10 +1,9 @@
-import { Head, usePage, useRemember } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
-import CreateAndEditRoomSchedule from "./Forms/CreateAndEditRoomSchedule";
 import FilterRoomScheduleOffcanvas from "./Forms/FilterRoomScheduleOffcanvas";
 import { LuCalendarRange, LuDoorOpen, LuSchool } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
@@ -25,6 +24,20 @@ const formatTime = (value) => {
     });
 };
 
+const semesterLabels = {
+    "1ST": "1st Semester",
+    "2ND": "2nd Semester",
+    "SUMMER": "SUMMER",
+};
+
+const formatAcademicPeriod = (row) => {
+    if (row?.academic_period_academic_year && row?.academic_period_semester) {
+        return `A.Y. ${row.academic_period_academic_year} - ${semesterLabels[row.academic_period_semester] ?? row.academic_period_semester}`;
+    }
+
+    return row?.academic_period_name ?? "-";
+};
+
 const isCurrentPeriod = (value) => Number(value) === 1 || value === true;
 
 export default function RoomSchedule() {
@@ -34,9 +47,6 @@ export default function RoomSchedule() {
         departments = [],
         subjects = [],
         rooms = [],
-        professors = [],
-        currentAcademicPeriod = null,
-        currentAcademicPeriodId = null,
         dayOptions = [],
     } = usePage().props;
     const tableRef = useRef(null);
@@ -48,7 +58,6 @@ export default function RoomSchedule() {
         day_of_week: "",
         room_id: "",
     });
-    const [editId, setEditId] = useRemember(null, "roomScheduleEditId");
     const [filters, setFilters] = useState({
         academic_period_id: "",
         branch_id: "",
@@ -122,13 +131,7 @@ export default function RoomSchedule() {
                             text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-plus icon-sm"></i> <span class="d-none d-sm-inline-block">Add Schedule</span></span>',
                             className: "create-new btn btn-primary",
                             action: function () {
-                                if (!currentAcademicPeriodId) {
-                                    toastr.error("Set a current academic period first before adding a room schedule.");
-                                    return;
-                                }
-
-                                setEditId(null);
-                                $("#roomScheduleModal").modal("show");
+                                router.get(route("admin.core.room-schedules.create"));
                             },
                         }],
                     }],
@@ -158,12 +161,7 @@ export default function RoomSchedule() {
             initComplete: function () {
                 $(".dt-buttons").removeClass("btn-group");
             },
-            order: [
-                [1, "desc"],
-                [2, "asc"],
-                [3, "asc"],
-                [4, "asc"],
-            ],
+            order: [[0, "desc"]],
             ajax: {
                 url: route("admin.core.room-schedules.data"),
                 data: function (d) {
@@ -187,7 +185,7 @@ export default function RoomSchedule() {
 
                         return `
                             <div class="d-flex flex-column">
-                                <span class="fw-medium">${data ?? "-"}</span>
+                                <span class="fw-medium">${formatAcademicPeriod(row)}</span>
                                 ${currentBadge}
                             </div>
                         `;
@@ -258,8 +256,7 @@ export default function RoomSchedule() {
         window.roomScheduleCRUD = window.roomScheduleCRUD || {};
 
         window.roomScheduleCRUD.edit = (id) => {
-            setEditId(id);
-            $("#roomScheduleModal").modal("show");
+            router.get(route("admin.core.room-schedules.edit", id));
         };
 
         window.roomScheduleCRUD.delete = (id, subjectCode, section) => {
@@ -294,27 +291,11 @@ export default function RoomSchedule() {
             });
         };
 
-        const $modal = $("#roomScheduleModal");
-        $modal.on("hidden.bs.modal", () => {
-            setEditId(null);
-        });
-
         return () => {
-            $modal.off("hidden.bs.modal");
             table.destroy();
             delete window.roomScheduleCRUD;
         };
-    }, [currentAcademicPeriodId, dayLabels]);
-
-    const handleSuccess = () => {
-        setEditId(null);
-
-        if (tableRef.current) {
-            tableRef.current.ajax.reload(null, false);
-        }
-
-        loadStats();
-    };
+    }, [dayLabels]);
 
     const applyFilters = (overrideFilters) => {
         filtersRef.current = { ...(overrideFilters ?? filters) };
@@ -370,19 +351,6 @@ export default function RoomSchedule() {
                         </ScrollableTable>
                     </div>
                 </div>
-
-                <CreateAndEditRoomSchedule
-                    editId={editId}
-                    academicPeriods={academicPeriods}
-                    branches={branches}
-                    departments={departments}
-                    subjects={subjects}
-                    currentAcademicPeriod={currentAcademicPeriod}
-                    currentAcademicPeriodId={currentAcademicPeriodId}
-                    professors={professors}
-                    dayOptions={dayOptions}
-                    onSuccess={handleSuccess}
-                />
 
                 <FilterRoomScheduleOffcanvas
                     filters={filters}

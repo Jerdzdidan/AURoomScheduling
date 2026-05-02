@@ -32,97 +32,25 @@ class RoomScheduleController extends Controller
 
     public function index()
     {
-        $currentAcademicPeriod = AcademicPeriod::query()
-            ->where('is_current', true)
-            ->first(['id', 'name', 'academic_year', 'semester', 'is_current']);
+        return inertia('Admin/Core/RoomSchedule', $this->getIndexProps());
+    }
 
-        $academicPeriods = AcademicPeriod::query()
-            ->latestFirst()
-            ->get(['id', 'name', 'academic_year', 'semester']);
+    public function create()
+    {
+        return inertia('Admin/Core/PageForm/RoomScheduleCreate', $this->getFormProps());
+    }
 
-        $branches = Branch::query()
-            ->orderBy('name')
-            ->get(['id', 'name', 'code']);
+    public function edit($id)
+    {
+        try {
+            $roomSchedule = $this->findScheduleOrFail($id);
+        } catch (DecryptException) {
+            abort(404);
+        }
 
-        $departments = Department::query()
-            ->join('branches', 'departments.branch_id', '=', 'branches.id')
-            ->orderBy('branches.name')
-            ->orderBy('departments.name')
-            ->get([
-                'departments.id',
-                'departments.name',
-                'departments.code',
-                'departments.branch_id',
-                'branches.name as branch_name',
-                'branches.code as branch_code',
-            ]);
-
-        $subjects = Subject::query()
-            ->join('departments', 'subjects.department_id', '=', 'departments.id')
-            ->join('branches', 'departments.branch_id', '=', 'branches.id')
-            ->orderBy('branches.name')
-            ->orderBy('departments.name')
-            ->orderBy('subjects.name')
-            ->get([
-                'subjects.id',
-                'subjects.name',
-                'subjects.code',
-                'subjects.department_id',
-                'departments.name as department_name',
-                'departments.code as department_code',
-                'departments.branch_id',
-                'branches.name as branch_name',
-                'branches.code as branch_code',
-            ]);
-
-        $rooms = Room::query()
-            ->with(['departments:id'])
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->join('branches', 'buildings.branch_id', '=', 'branches.id')
-            ->orderBy('branches.name')
-            ->orderBy('buildings.name')
-            ->orderBy('rooms.code')
-            ->get([
-                'rooms.id',
-                'rooms.code',
-                'rooms.type',
-                'buildings.id as building_id',
-                'buildings.name as building_name',
-                'buildings.code as building_code',
-                'branches.id as branch_id',
-                'branches.name as branch_name',
-                'branches.code as branch_code',
-            ])
-            ->map(fn (Room $room) => [
-                'id' => $room->id,
-                'code' => $room->code,
-                'type' => $room->type,
-                'building_id' => $room->building_id,
-                'building_name' => $room->building_name,
-                'building_code' => $room->building_code,
-                'branch_id' => $room->branch_id,
-                'branch_name' => $room->branch_name,
-                'branch_code' => $room->branch_code,
-                'department_ids' => $room->departments->pluck('id')->map(fn ($id) => (string) $id)->values()->all(),
-            ])
-            ->values();
-
-        $professors = Professor::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
-        return inertia('Admin/Core/RoomSchedule', [
-            'academicPeriods' => $academicPeriods,
-            'branches' => $branches,
-            'departments' => $departments,
-            'subjects' => $subjects,
-            'rooms' => $rooms,
-            'professors' => $professors,
-            'currentAcademicPeriod' => $currentAcademicPeriod,
-            'currentAcademicPeriodId' => $currentAcademicPeriod?->id,
-            'dayOptions' => collect(self::DAY_LABELS)
-                ->map(fn(string $name, string $id) => ['id' => $id, 'name' => $name])
-                ->values(),
+        return inertia('Admin/Core/PageForm/RoomScheduleEdit', [
+            ...$this->getFormProps(),
+            'roomSchedule' => $this->serializeSchedule($roomSchedule, $id),
         ]);
     }
 
@@ -147,6 +75,8 @@ class RoomScheduleController extends Controller
                 'room_schedules.subject_id',
                 'room_schedules.room_id',
                 'academic_periods.name as academic_period_name',
+                'academic_periods.academic_year as academic_period_academic_year',
+                'academic_periods.semester as academic_period_semester',
                 'academic_periods.is_current as is_current_period',
                 'subjects.name as subject_name',
                 'subjects.code as subject_code',
@@ -294,36 +224,13 @@ class RoomScheduleController extends Controller
         ]);
     }
 
-    public function show($id)
-    {
-        try {
-            $roomSchedule = $this->findScheduleOrFail($id);
-
-            return response()->json([
-                'id' => $id,
-                'academic_period_id' => $roomSchedule->academic_period_id,
-                'subject_id' => $roomSchedule->subject_id,
-                'room_id' => $roomSchedule->room_id,
-                'professor_id' => $roomSchedule->professor_id,
-                'section' => $roomSchedule->section,
-                'day_of_week' => $roomSchedule->day_of_week,
-                'start_time' => substr((string) $roomSchedule->start_time, 0, 5),
-                'end_time' => substr((string) $roomSchedule->end_time, 0, 5),
-                'professor_name' => $roomSchedule->professor?->name ?? '',
-                'notes' => $roomSchedule->notes ?? '',
-            ]);
-        } catch (DecryptException) {
-            return response()->json(['message' => 'Invalid room schedule ID.'], 400);
-        }
-    }
-
     public function store(Request $request)
     {
         $validated = $this->validateSchedule($request);
 
         RoomSchedule::create($this->buildSchedulePayload($validated));
 
-        return redirect()->back()->with('success', 'Room schedule created successfully.');
+        return to_route('admin.core.room-schedules.index');
     }
 
     public function update(Request $request, $id)
@@ -334,7 +241,7 @@ class RoomScheduleController extends Controller
 
             $roomSchedule->update($this->buildSchedulePayload($validated));
 
-            return redirect()->back()->with('success', 'Room schedule updated successfully.');
+            return to_route('admin.core.room-schedules.index');
         } catch (DecryptException) {
             return response()->json(['message' => 'Invalid room schedule ID.'], 400);
         }
@@ -471,11 +378,164 @@ class RoomScheduleController extends Controller
         ];
     }
 
+    private function getIndexProps(): array
+    {
+        return [
+            'academicPeriods' => $this->getAcademicPeriods(),
+            'branches' => $this->getBranches(),
+            'departments' => $this->getDepartments(),
+            'subjects' => $this->getSubjects(),
+            'rooms' => $this->getRooms(),
+            'dayOptions' => $this->getDayOptions(),
+        ];
+    }
+
+    private function getFormProps(): array
+    {
+        $currentAcademicPeriod = $this->getCurrentAcademicPeriod();
+
+        return [
+            'academicPeriods' => $this->getAcademicPeriods(),
+            'branches' => $this->getBranches(),
+            'departments' => $this->getDepartments(),
+            'subjects' => $this->getSubjects(),
+            'professors' => Professor::query()
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'currentAcademicPeriod' => $currentAcademicPeriod,
+            'currentAcademicPeriodId' => $currentAcademicPeriod?->id,
+            'dayOptions' => $this->getDayOptions(),
+        ];
+    }
+
+    private function getCurrentAcademicPeriod(): ?AcademicPeriod
+    {
+        return AcademicPeriod::query()
+            ->where('is_current', true)
+            ->first(['id', 'name', 'academic_year', 'semester', 'is_current']);
+    }
+
+    private function getAcademicPeriods()
+    {
+        return AcademicPeriod::query()
+            ->latestFirst()
+            ->get(['id', 'name', 'academic_year', 'semester']);
+    }
+
+    private function getBranches()
+    {
+        return Branch::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+    }
+
+    private function getDepartments()
+    {
+        return Department::query()
+            ->join('branches', 'departments.branch_id', '=', 'branches.id')
+            ->orderBy('branches.name')
+            ->orderBy('departments.name')
+            ->get([
+                'departments.id',
+                'departments.name',
+                'departments.code',
+                'departments.branch_id',
+                'branches.name as branch_name',
+                'branches.code as branch_code',
+            ]);
+    }
+
+    private function getSubjects()
+    {
+        return Subject::query()
+            ->join('departments', 'subjects.department_id', '=', 'departments.id')
+            ->join('branches', 'departments.branch_id', '=', 'branches.id')
+            ->orderBy('branches.name')
+            ->orderBy('departments.name')
+            ->orderBy('subjects.name')
+            ->get([
+                'subjects.id',
+                'subjects.name',
+                'subjects.code',
+                'subjects.department_id',
+                'departments.name as department_name',
+                'departments.code as department_code',
+                'departments.branch_id',
+                'branches.name as branch_name',
+                'branches.code as branch_code',
+            ]);
+    }
+
+    private function getRooms()
+    {
+        return Room::query()
+            ->with(['departments:id'])
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('branches', 'buildings.branch_id', '=', 'branches.id')
+            ->orderBy('branches.name')
+            ->orderBy('buildings.name')
+            ->orderBy('rooms.code')
+            ->get([
+                'rooms.id',
+                'rooms.code',
+                'rooms.type',
+                'buildings.id as building_id',
+                'buildings.name as building_name',
+                'buildings.code as building_code',
+                'branches.id as branch_id',
+                'branches.name as branch_name',
+                'branches.code as branch_code',
+            ])
+            ->map(fn (Room $room) => [
+                'id' => $room->id,
+                'code' => $room->code,
+                'type' => $room->type,
+                'building_id' => $room->building_id,
+                'building_name' => $room->building_name,
+                'building_code' => $room->building_code,
+                'branch_id' => $room->branch_id,
+                'branch_name' => $room->branch_name,
+                'branch_code' => $room->branch_code,
+                'department_ids' => $room->departments->pluck('id')->map(fn ($id) => (string) $id)->values()->all(),
+            ])
+            ->values();
+    }
+
+    private function getDayOptions()
+    {
+        return collect(self::DAY_LABELS)
+            ->map(fn(string $name, string $id) => ['id' => $id, 'name' => $name])
+            ->values();
+    }
+
+    private function serializeSchedule(RoomSchedule $roomSchedule, ?string $encryptedId = null): array
+    {
+        $roomSchedule->loadMissing([
+            'subject:id,department_id',
+            'subject.department:id,branch_id',
+        ]);
+
+        return [
+            'id' => $encryptedId ?? Crypt::encryptString((string) $roomSchedule->getKey()),
+            'academic_period_id' => $roomSchedule->academic_period_id,
+            'branch_id' => $roomSchedule->subject?->department?->branch_id,
+            'department_id' => $roomSchedule->subject?->department_id,
+            'subject_id' => $roomSchedule->subject_id,
+            'room_id' => $roomSchedule->room_id,
+            'professor_id' => $roomSchedule->professor_id,
+            'section' => $roomSchedule->section,
+            'day_of_week' => $roomSchedule->day_of_week,
+            'start_time' => substr((string) $roomSchedule->start_time, 0, 5),
+            'end_time' => substr((string) $roomSchedule->end_time, 0, 5),
+            'notes' => $roomSchedule->notes ?? '',
+        ];
+    }
+
     private function findScheduleOrFail(string $id): RoomSchedule
     {
         $decrypted = Crypt::decryptString($id);
 
-        return RoomSchedule::with('professor')->findOrFail($decrypted);
+        return RoomSchedule::findOrFail($decrypted);
     }
 
     private function formatTimeRange(string $startTime, string $endTime): string

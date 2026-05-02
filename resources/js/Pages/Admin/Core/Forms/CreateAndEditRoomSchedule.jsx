@@ -1,50 +1,49 @@
-import { useForm } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 import { useEffect, useMemo, useState } from "react";
-import ModalForm from "@/Components/Form/ModalForm";
-import WizardSteps from "@/Components/Form/WizardSteps";
+import FormSteps from "@/Components/Form/FormSteps";
 import InputField from "@/Components/Input/InputField";
 import SelectField from "@/Components/Input/SelectField";
 import TimeSelectField from "@/Components/Input/TimeSelectField";
 
-const WIZARD_STEPS = [
+const FORM_STEPS = [
     {
-        id: "course-details",
-        title: "Course Details",
+        id: "subject-details",
+        title: "Subject Details",
         subtitle: "Branch, department, and subject",
         icon: "bx bx-book-open",
     },
     {
         id: "schedule-details",
         title: "Schedule Details",
-        subtitle: "Section, professor, day, time, and notes",
+        subtitle: "Section, professor, schedule, and room",
         icon: "bx bx-time-five",
-    },
-    {
-        id: "room-assignment",
-        title: "Room Assignment",
-        subtitle: "Pick from rooms available in that branch and time slot",
-        icon: "bx bx-door-open",
     },
 ];
 
-const getInitialValues = (currentAcademicPeriodId) => ({
-    academic_period_id: currentAcademicPeriodId?.toString() ?? "",
-    branch_id: "",
-    department_id: "",
-    subject_id: "",
-    professor_id: "",
-    room_id: "",
-    section: "",
-    day_of_week: "",
-    start_time: "",
-    end_time: "",
-    notes: "",
+const getInitialValues = (currentAcademicPeriodId, roomSchedule = null) => ({
+    academic_period_id: roomSchedule?.academic_period_id?.toString() ?? currentAcademicPeriodId?.toString() ?? "",
+    branch_id: roomSchedule?.branch_id?.toString() ?? "",
+    department_id: roomSchedule?.department_id?.toString() ?? "",
+    subject_id: roomSchedule?.subject_id?.toString() ?? "",
+    professor_id: roomSchedule?.professor_id?.toString() ?? "",
+    room_id: roomSchedule?.room_id?.toString() ?? "",
+    section: roomSchedule?.section ?? "",
+    day_of_week: roomSchedule?.day_of_week ?? "",
+    start_time: roomSchedule?.start_time ?? "",
+    end_time: roomSchedule?.end_time ?? "",
+    notes: roomSchedule?.notes ?? "",
 });
 
 const getEmptyAvailabilityMeta = () => ({
     total_rooms: 0,
     available_count: 0,
 });
+
+const semesterLabels = {
+    "1ST": "1st Semester",
+    "2ND": "2nd Semester",
+    "SUMMER": "SUMMER",
+};
 
 const formatTime = (value) => {
     if (!value) {
@@ -67,7 +66,11 @@ const formatAcademicPeriod = (period) => {
         return "No current academic period set";
     }
 
-    return period.name || [period.academic_year, period.semester].filter(Boolean).join(" - ");
+    if (period.academic_year && period.semester) {
+        return `A.Y. ${period.academic_year} - ${semesterLabels[period.semester] ?? period.semester}`;
+    }
+
+    return period.name || "No current academic period set";
 };
 
 const extractAjaxError = (xhr, fallbackMessage) => {
@@ -83,56 +86,14 @@ const getErrorStep = (errors) => {
         return 0;
     }
 
-    if (errors.section || errors.professor_id || errors.day_of_week || errors.start_time || errors.end_time || errors.notes) {
+    if (errors.section || errors.professor_id || errors.day_of_week || errors.start_time || errors.end_time || errors.notes || errors.room_id) {
         return 1;
-    }
-
-    if (errors.room_id) {
-        return 2;
     }
 
     return 0;
 };
 
-function SummaryItem({ label, value }) {
-    return (
-        <div>
-            <span className="text-muted small d-block">{label}</span>
-            <span className="fw-semibold">{value || "Not selected yet"}</span>
-        </div>
-    );
-}
-
-function RoomOptionCard({ room, selected, onSelect }) {
-    return (
-        <button
-            type="button"
-            className={`room-schedule-room-card ${selected ? "is-selected" : ""}`}
-            onClick={() => onSelect(room.id)}
-        >
-            <div className="d-flex justify-content-between align-items-start gap-3">
-                <div>
-                    <h6 className="mb-1">{room.code}</h6>
-                    <div className="room-meta">
-                        {room.building_code} - {room.building_name}
-                    </div>
-                </div>
-
-                <span className={`badge ${selected ? "bg-primary" : "bg-label-primary"}`}>
-                    {selected ? "Selected" : "Available"}
-                </span>
-            </div>
-
-            <div className="d-flex align-items-center gap-2 mt-3 text-muted small">
-                <i className="bx bx-category-alt"></i>
-                <span>{room.type}</span>
-            </div>
-        </button>
-    );
-}
-
 export default function CreateAndEditRoomSchedule({
-    editId,
     academicPeriods,
     branches,
     departments,
@@ -141,9 +102,9 @@ export default function CreateAndEditRoomSchedule({
     currentAcademicPeriod,
     currentAcademicPeriodId,
     dayOptions,
-    onSuccess,
+    roomSchedule = null,
 }) {
-    const isEditing = !!editId;
+    const isEditing = Boolean(roomSchedule?.id);
     const {
         data,
         setData,
@@ -153,7 +114,7 @@ export default function CreateAndEditRoomSchedule({
         errors,
         clearErrors,
         setError,
-    } = useForm("roomScheduleForm", getInitialValues(currentAcademicPeriodId));
+    } = useForm(getInitialValues(currentAcademicPeriodId, roomSchedule));
     const [currentStep, setCurrentStep] = useState(0);
     const [availableRooms, setAvailableRooms] = useState([]);
     const [availabilityMeta, setAvailabilityMeta] = useState(getEmptyAvailabilityMeta());
@@ -193,16 +154,6 @@ export default function CreateAndEditRoomSchedule({
         [departments],
     );
 
-    const subjectMap = useMemo(
-        () => new Map(subjects.map((subject) => [subject.id?.toString(), subject])),
-        [subjects],
-    );
-
-    const professorMap = useMemo(
-        () => new Map(professors.map((professor) => [professor.id?.toString(), professor])),
-        [professors],
-    );
-
     const dayLabels = useMemo(
         () => Object.fromEntries(dayOptions.map((option) => [option.id, option.name])),
         [dayOptions],
@@ -218,12 +169,6 @@ export default function CreateAndEditRoomSchedule({
 
     const selectedBranch = branchMap.get(data.branch_id?.toString());
     const selectedDepartment = departmentMap.get(data.department_id?.toString());
-    const selectedSubject = subjectMap.get(data.subject_id?.toString());
-    const selectedProfessor = professorMap.get(data.professor_id?.toString());
-    const selectedRoom = useMemo(
-        () => availableRooms.find((room) => room.id?.toString() === data.room_id?.toString()) ?? null,
-        [availableRooms, data.room_id],
-    );
 
     const availabilityKey = useMemo(
         () => [
@@ -233,7 +178,7 @@ export default function CreateAndEditRoomSchedule({
             data.day_of_week,
             data.start_time,
             data.end_time,
-            editId ?? "",
+            roomSchedule?.id ?? "",
         ].join("::"),
         [
             data.academic_period_id,
@@ -242,7 +187,7 @@ export default function CreateAndEditRoomSchedule({
             data.day_of_week,
             data.start_time,
             data.end_time,
-            editId,
+            roomSchedule?.id,
         ],
     );
 
@@ -264,11 +209,6 @@ export default function CreateAndEditRoomSchedule({
         setLoadingAvailableRooms(false);
     };
 
-    const resetWizardState = () => {
-        setCurrentStep(0);
-        resetAvailabilityState();
-    };
-
     const isStepComplete = (stepIndex) => {
         if (stepIndex === 0) {
             return Boolean(
@@ -286,12 +226,9 @@ export default function CreateAndEditRoomSchedule({
                 && data.day_of_week
                 && data.start_time
                 && data.end_time
-                && data.end_time > data.start_time,
+                && data.end_time > data.start_time
+                && data.room_id,
             );
-        }
-
-        if (stepIndex === 2) {
-            return Boolean(data.room_id);
         }
 
         return false;
@@ -304,10 +241,6 @@ export default function CreateAndEditRoomSchedule({
 
         if (stepIndex === 1) {
             return isStepComplete(0);
-        }
-
-        if (stepIndex === 2) {
-            return isStepComplete(0) && isStepComplete(1);
         }
 
         return false;
@@ -337,7 +270,7 @@ export default function CreateAndEditRoomSchedule({
             }
 
             if (hasStepError) {
-                toastr.error("Complete the course details before continuing.");
+                toastr.error("Complete the subject details before continuing.");
                 setCurrentStep(0);
                 return false;
             }
@@ -374,43 +307,41 @@ export default function CreateAndEditRoomSchedule({
             }
 
             if (hasStepError) {
-                toastr.error("Complete the schedule details before continuing.");
+                toastr.error("Complete the schedule details before saving.");
                 setCurrentStep(1);
                 return false;
             }
 
-            return true;
-        }
+            if (loadingAvailableRooms || availabilityStatus === "idle") {
+                const pendingMessage = "Please wait while available rooms are being checked.";
 
-        if (loadingAvailableRooms || availabilityStatus === "idle") {
-            const pendingMessage = "Please wait while available rooms are being checked.";
+                setError("room_id", pendingMessage);
+                toastr.error(pendingMessage);
+                setCurrentStep(1);
+                return false;
+            }
 
-            setError("room_id", pendingMessage);
-            toastr.error(pendingMessage);
-            setCurrentStep(2);
-            return false;
-        }
+            if (availabilityStatus === "error") {
+                const failedMessage = availabilityError || "Unable to verify room availability. Please refresh and try again.";
 
-        if (availabilityStatus === "error") {
-            const failedMessage = availabilityError || "Unable to verify room availability. Please refresh and try again.";
+                setError("room_id", failedMessage);
+                toastr.error(failedMessage);
+                setCurrentStep(1);
+                return false;
+            }
 
-            setError("room_id", failedMessage);
-            toastr.error(failedMessage);
-            setCurrentStep(2);
-            return false;
-        }
+            if (!data.room_id) {
+                const roomMessage = availabilityMeta.total_rooms === 0
+                    ? "No rooms are registered for the selected branch and department yet."
+                    : availabilityMeta.available_count === 0
+                        ? "No rooms are available for the selected branch, department, and schedule window."
+                        : "Select one of the available rooms before saving.";
 
-        if (!data.room_id) {
-            const roomMessage = availabilityMeta.total_rooms === 0
-                ? "No rooms are registered for the selected branch yet."
-                : availabilityMeta.available_count === 0
-                    ? "No rooms are available for the selected branch and schedule window."
-                    : "Select one of the available rooms before saving.";
-
-            setError("room_id", roomMessage);
-            toastr.error(roomMessage);
-            setCurrentStep(2);
-            return false;
+                setError("room_id", roomMessage);
+                toastr.error(roomMessage);
+                setCurrentStep(1);
+                return false;
+            }
         }
 
         return true;
@@ -432,7 +363,7 @@ export default function CreateAndEditRoomSchedule({
             day_of_week: data.day_of_week,
             start_time: data.start_time,
             end_time: data.end_time,
-            ...(editId ? { schedule_id: editId } : {}),
+            ...(roomSchedule?.id ? { schedule_id: roomSchedule.id } : {}),
         })
             .done((response) => {
                 const rooms = response.rooms ?? [];
@@ -463,63 +394,76 @@ export default function CreateAndEditRoomSchedule({
             });
     };
 
+    const roomFieldHelp = useMemo(() => {
+        if (!data.day_of_week || !data.start_time || !data.end_time) {
+            return "Select the day, start time, and end time to load available rooms.";
+        }
+
+        if (data.start_time && data.end_time && data.end_time <= data.start_time) {
+            return "End time must be later than start time to check available rooms.";
+        }
+
+        if (availabilityStatus === "idle" && canLoadAvailability) {
+            return "Available rooms will load automatically for the selected branch, department, day, and time.";
+        }
+
+        if (loadingAvailableRooms) {
+            return "Checking room availability for the selected branch, department, day, and time.";
+        }
+
+        if (availabilityStatus === "error") {
+            return availabilityError;
+        }
+
+        if (availabilityStatus === "success" && availableRooms.length === 0) {
+            return availabilityMeta.total_rooms === 0
+                ? "No rooms are assigned yet for this department in the selected branch. Update room assignments first in Utilities > Room."
+                : "No assigned rooms are currently available for that branch, department, day, and time range. Try another schedule window.";
+        }
+
+        return "";
+    }, [
+        availabilityError,
+        availabilityMeta.total_rooms,
+        availabilityStatus,
+        availableRooms.length,
+        canLoadAvailability,
+        data.day_of_week,
+        data.end_time,
+        data.start_time,
+        loadingAvailableRooms,
+    ]);
+
+    const roomPlaceholder = useMemo(() => {
+        if (!canLoadAvailability) {
+            return "Select day and time first";
+        }
+
+        if (loadingAvailableRooms) {
+            return "Checking available rooms...";
+        }
+
+        if (availabilityStatus === "idle") {
+            return "Preparing available rooms...";
+        }
+
+        if (availableRooms.length > 0) {
+            return "Select an available room";
+        }
+
+        return "No available rooms found";
+    }, [availabilityStatus, availableRooms.length, canLoadAvailability, loadingAvailableRooms]);
+
     useEffect(() => {
         if (!hasErrors) {
             return;
         }
 
-        $("#roomScheduleModal").modal("show");
         setCurrentStep(getErrorStep(errors));
     }, [errors, hasErrors]);
 
     useEffect(() => {
-        if (!editId) {
-            return;
-        }
-
-        $.get(route("admin.core.room-schedules.show", editId))
-            .done((roomSchedule) => {
-                const scheduleSubject = subjects.find(
-                    (subject) => subject.id?.toString() === roomSchedule.subject_id?.toString(),
-                );
-
-                resetWizardState();
-                setData({
-                    academic_period_id: roomSchedule.academic_period_id?.toString() ?? "",
-                    branch_id: scheduleSubject?.branch_id?.toString() ?? "",
-                    department_id: scheduleSubject?.department_id?.toString() ?? "",
-                    subject_id: roomSchedule.subject_id?.toString() ?? "",
-                    room_id: roomSchedule.room_id?.toString() ?? "",
-                    professor_id: roomSchedule.professor_id?.toString() ?? "",
-                    section: roomSchedule.section ?? "",
-                    day_of_week: roomSchedule.day_of_week ?? "",
-                    start_time: roomSchedule.start_time ?? "",
-                    end_time: roomSchedule.end_time ?? "",
-                    notes: roomSchedule.notes ?? "",
-                });
-            })
-            .fail(() => {
-                toastr.error("Failed to load room schedule details.");
-            });
-    }, [editId, subjects]);
-
-    useEffect(() => {
-        const $modal = $("#roomScheduleModal");
-        const handleHidden = () => {
-            setData(getInitialValues(currentAcademicPeriodId));
-            clearErrors();
-            resetWizardState();
-        };
-
-        $modal.on("hidden.bs.modal", handleHidden);
-
-        return () => {
-            $modal.off("hidden.bs.modal", handleHidden);
-        };
-    }, [clearErrors, currentAcademicPeriodId, setData]);
-
-    useEffect(() => {
-        if (currentStep !== 2 || !canLoadAvailability) {
+        if (currentStep !== 1 || !canLoadAvailability) {
             return;
         }
 
@@ -529,139 +473,60 @@ export default function CreateAndEditRoomSchedule({
     const handleSubmit = (event) => {
         event.preventDefault();
 
-        if (!validateStep(0) || !validateStep(1) || !validateStep(2)) {
+        if (!validateStep(0) || !validateStep(1)) {
             return;
         }
 
         const options = {
             onSuccess: () => {
-                setData(getInitialValues(currentAcademicPeriodId));
-                $("#roomScheduleModal").modal("hide");
                 toastr.success(
                     isEditing
                         ? "Room schedule updated successfully."
                         : "Room schedule created successfully.",
                 );
-
-                if (onSuccess) {
-                    onSuccess();
-                }
             },
         };
 
         if (isEditing) {
-            put(route("admin.core.room-schedules.update", editId), options);
+            put(route("admin.core.room-schedules.update", roomSchedule.id), options);
             return;
         }
 
         post(route("admin.core.room-schedules.store"), options);
     };
 
-    const handleNextStep = () => {
-        if (!validateStep(currentStep)) {
-            return;
-        }
-
-        setCurrentStep((step) => Math.min(step + 1, WIZARD_STEPS.length - 1));
-    };
-
-    const summaryCard = (
-        <div className="card shadow-none room-schedule-summary-card h-100">
-            <div className="card-body d-flex flex-column gap-3">
-                <div>
-                    <h6 className="card-title mb-1">Schedule Summary</h6>
-                    <p className="text-muted small mb-0">
-                        This snapshot updates as you move through the wizard.
-                    </p>
-                </div>
-
-                <SummaryItem
-                    label="Academic Period"
-                    value={formatAcademicPeriod(selectedAcademicPeriod)}
-                />
-                <SummaryItem label="Branch" value={selectedBranch?.name} />
-                <SummaryItem
-                    label="Department"
-                    value={selectedDepartment ? `${selectedDepartment.code} - ${selectedDepartment.name}` : ""}
-                />
-                <SummaryItem
-                    label="Subject"
-                    value={selectedSubject ? `${selectedSubject.code} - ${selectedSubject.name}` : ""}
-                />
-                <SummaryItem label="Section" value={data.section} />
-                <SummaryItem label="Professor" value={selectedProfessor?.name} />
-                <SummaryItem
-                    label="Schedule"
-                    value={
-                        data.day_of_week && data.start_time && data.end_time
-                            ? `${dayLabels[data.day_of_week] ?? data.day_of_week}, ${formatTime(data.start_time)} - ${formatTime(data.end_time)}`
-                            : ""
-                    }
-                />
-                <SummaryItem
-                    label="Selected Room"
-                    value={selectedRoom ? `${selectedRoom.code}` : ""}
-                />
-            </div>
-        </div>
-    );
-
     return (
-        <ModalForm
-            id="roomScheduleModal"
-            title={isEditing ? "Edit Room Schedule" : "Add Room Schedule"}
-            subtitle="Use the wizard to place each class into the right branch, time slot, and available room."
-            formId="room-schedule-form"
-            onSubmit={handleSubmit}
-            footer={(
-                <div className="w-100 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <button
-                        type="button"
-                        className={`btn ${currentStep > 0 ? "btn-outline-secondary" : "btn-label-secondary"}`}
-                        onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
-                        disabled={currentStep === 0}
-                    >
-                        <i className="bx bx-chevron-left me-1"></i>
-                        <span>Previous</span>
-                    </button>
-
-                    <div className="d-flex flex-wrap justify-content-end gap-2">
-                        {currentStep < WIZARD_STEPS.length - 1 ? (
-                            <button
-                                type="button"
-                                className="btn btn-primary"
-                                onClick={handleNextStep}
-                            >
-                                <span>Next</span>
-                                <i className="bx bx-chevron-right ms-1"></i>
-                            </button>
-                        ) : (
-                            <button
-                                type="submit"
-                                className="btn btn-primary"
-                                disabled={processing || loadingAvailableRooms || availabilityStatus === "idle"}
-                            >
-                                {processing
-                                    ? "Saving..."
-                                    : (isEditing ? "Update Schedule" : "Save Schedule")}
-                            </button>
-                        )}
+        <div className="card">
+            <div className="card-body p-4 p-xl-5">
+                <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                    <div>
+                        <h4 className="mb-1">
+                            {isEditing ? "Edit Room Schedule" : "Create Room Schedule"}
+                        </h4>
+                        <p className="text-muted mb-0">
+                            Assign the subject to an available room within the selected branch, department, and schedule window.
+                        </p>
                     </div>
+
+                    <Link
+                        href={route("admin.core.room-schedules.index")}
+                        className="btn btn-label-secondary"
+                    >
+                        <i className="bx bx-arrow-back me-1"></i>
+                        <span>Back to Room Schedule</span>
+                    </Link>
                 </div>
-            )}
-        >
-            <WizardSteps
-                steps={WIZARD_STEPS}
-                currentStep={currentStep}
-                onStepChange={setCurrentStep}
-                canNavigateToStep={canNavigateToStep}
-            />
 
-            {currentStep === 0 && (
-                <>
+                <form id="room-schedule-form" onSubmit={handleSubmit}>
+                    <FormSteps
+                        steps={FORM_STEPS}
+                        currentStep={currentStep}
+                        onStepChange={setCurrentStep}
+                        canNavigateToStep={canNavigateToStep}
+                    />
 
-                    <div className="row g-4">
-                        <div className="col-lg-8">
+                    {currentStep === 0 && (
+                        <>
                             <div className="room-schedule-period-banner mb-4">
                                 <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
                                     <div>
@@ -687,345 +552,313 @@ export default function CreateAndEditRoomSchedule({
                                     </div>
                                 )}
                             </div>
+
+                            <div className="row">
+                                <div className="col-lg-6">
+                                    <SelectField
+                                        id="schedule-branch"
+                                        label="Branch"
+                                        name="branch_id"
+                                        placeholder="Select a branch"
+                                        value={data.branch_id}
+                                        onChange={(value) => {
+                                            clearErrors("branch_id");
+                                            clearErrors("department_id");
+                                            clearErrors("subject_id");
+                                            clearErrors("room_id");
+                                            setData((current) => ({
+                                                ...current,
+                                                branch_id: value,
+                                                department_id: "",
+                                                subject_id: "",
+                                                room_id: "",
+                                            }));
+                                            resetAvailabilityState();
+                                        }}
+                                        options={branches}
+                                        error={errors.branch_id}
+                                        help="Choose the branch first so the rest of the academic hierarchy stays accurate."
+                                    />
+                                </div>
+
+                                <div className="col-lg-6">
+                                    <SelectField
+                                        id="schedule-department"
+                                        label="Department"
+                                        name="department_id"
+                                        placeholder={data.branch_id ? "Select a department" : "Select a branch first"}
+                                        value={data.department_id}
+                                        onChange={(value) => {
+                                            clearErrors("department_id");
+                                            clearErrors("subject_id");
+                                            clearErrors("room_id");
+                                            setData((current) => ({
+                                                ...current,
+                                                department_id: value,
+                                                subject_id: "",
+                                                room_id: "",
+                                            }));
+                                            resetAvailabilityState();
+                                        }}
+                                        options={filteredDepartments}
+                                        renderOption={(department) => `${department.code} - ${department.name}`}
+                                        error={errors.department_id}
+                                        help={data.branch_id
+                                            ? "No departments found for the selected branch."
+                                            : "Select a branch first before choosing a department."}
+                                        disabled={!data.branch_id}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="row">
+                                <div className="col-lg-6">
+                                    <SelectField
+                                        id="schedule-subject"
+                                        label="Subject"
+                                        name="subject_id"
+                                        placeholder={data.department_id ? "Select a subject" : "Select a department first"}
+                                        value={data.subject_id}
+                                        onChange={(value) => {
+                                            clearErrors("subject_id");
+                                            clearErrors("room_id");
+                                            setData((current) => ({
+                                                ...current,
+                                                subject_id: value,
+                                                room_id: "",
+                                            }));
+                                            resetAvailabilityState();
+                                        }}
+                                        options={filteredSubjects}
+                                        renderOption={(subject) => `${subject.code} - ${subject.name}`}
+                                        error={errors.subject_id}
+                                        help={data.department_id
+                                            ? "No subjects found for the selected department."
+                                            : "Select a department first before choosing a subject."}
+                                        disabled={!data.department_id}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {currentStep === 1 && (
+                        <>
+                            <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                                <div>
+                                    <h6 className="mb-1">Schedule Details</h6>
+                                    <p className="text-muted mb-0">
+                                        Available rooms update from the selected branch, department, day, and time window.
+                                    </p>
+                                </div>
+
+                                {availabilityStatus === "success" && (
+                                    <div className="d-flex flex-wrap align-items-center gap-2">
+                                        <span className="badge bg-label-primary">
+                                            {availabilityMeta.available_count} available
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <InputField
+                                        id="schedule-section"
+                                        label="Section"
+                                        name="section"
+                                        icon="bx bx-grid-alt"
+                                        placeholder="BSIT-1A"
+                                        value={data.section}
+                                        onChange={(event) => {
+                                            clearErrors("section");
+                                            setData("section", event.target.value.toUpperCase());
+                                        }}
+                                        error={errors.section}
+                                        help="Use the section name students will recognize."
+                                    />
+                                </div>
+
+                                <div className="col-md-6">
+                                    <SelectField
+                                        id="schedule-professor"
+                                        label="Professor"
+                                        name="professor_id"
+                                        placeholder="Select a professor"
+                                        value={data.professor_id}
+                                        onChange={(value) => {
+                                            clearErrors("professor_id");
+                                            setData("professor_id", value);
+                                        }}
+                                        options={professors}
+                                        error={errors.professor_id}
+                                        help="Create a professor first in Utilities if the person is not listed yet."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="row">
+                                <div className="col-md-4">
+                                    <SelectField
+                                        id="schedule-day"
+                                        label="Day"
+                                        name="day_of_week"
+                                        placeholder="Select a day"
+                                        value={data.day_of_week}
+                                        onChange={(value) => {
+                                            clearErrors("day_of_week");
+                                            clearErrors("room_id");
+                                            setData((current) => ({
+                                                ...current,
+                                                day_of_week: value,
+                                                room_id: "",
+                                            }));
+                                            resetAvailabilityState();
+                                        }}
+                                        options={dayOptions}
+                                        error={errors.day_of_week}
+                                    />
+                                </div>
+
+                                <div className="col-md-4">
+                                    <TimeSelectField
+                                        id="schedule-start-time"
+                                        label="Start Time"
+                                        name="start_time"
+                                        value={data.start_time}
+                                        onChange={(value) => {
+                                            clearErrors("start_time");
+                                            clearErrors("room_id");
+                                            setData((current) => ({
+                                                ...current,
+                                                start_time: value,
+                                                room_id: "",
+                                            }));
+                                            resetAvailabilityState();
+                                        }}
+                                        error={errors.start_time}
+                                        help="Allowed schedule window is 7:30 AM to 8:30 PM."
+                                    />
+                                </div>
+
+                                <div className="col-md-4">
+                                    <TimeSelectField
+                                        id="schedule-end-time"
+                                        label="End Time"
+                                        name="end_time"
+                                        value={data.end_time}
+                                        onChange={(value) => {
+                                            clearErrors("end_time");
+                                            clearErrors("room_id");
+                                            setData((current) => ({
+                                                ...current,
+                                                end_time: value,
+                                                room_id: "",
+                                            }));
+                                            resetAvailabilityState();
+                                        }}
+                                        error={errors.end_time}
+                                        help="Allowed schedule window is 7:30 AM to 8:30 PM."
+                                    />
+                                </div>
+                            </div>
+
                             <SelectField
-                                id="schedule-branch"
-                                label="Branch"
-                                name="branch_id"
-                                placeholder="Select a branch"
-                                value={data.branch_id}
-                                onChange={(val) => {
-                                    clearErrors("branch_id");
-                                    clearErrors("department_id");
-                                    clearErrors("subject_id");
+                                id="schedule-room"
+                                label="Available Room"
+                                name="room_id"
+                                placeholder={roomPlaceholder}
+                                value={data.room_id}
+                                onChange={(value) => {
                                     clearErrors("room_id");
-                                    setData((current) => ({
-                                        ...current,
-                                        branch_id: val,
-                                        department_id: "",
-                                        subject_id: "",
-                                        room_id: "",
-                                    }));
-                                    resetAvailabilityState();
+                                    setData("room_id", value);
                                 }}
-                                options={branches}
-                                dropdownParent="#roomScheduleModal"
-                                error={errors.branch_id}
-                                help="Choose the branch first so the rest of the academic hierarchy stays accurate."
+                                options={availableRooms}
+                                renderOption={(room) => `${room.code} (${room.type})`}
+                                error={errors.room_id}
+                                help={roomFieldHelp}
+                                disabled={!canLoadAvailability || loadingAvailableRooms || availableRooms.length === 0}
                             />
 
-                            <SelectField
-                                id="schedule-department"
-                                label="Department"
-                                name="department_id"
-                                placeholder={data.branch_id ? "Select a department" : "Select a branch first"}
-                                value={data.department_id}
-                                onChange={(val) => {
-                                    clearErrors("department_id");
-                                    clearErrors("subject_id");
-                                    clearErrors("room_id");
-                                    setData((current) => ({
-                                        ...current,
-                                        department_id: val,
-                                        subject_id: "",
-                                        room_id: "",
-                                    }));
-                                    resetAvailabilityState();
-                                }}
-                                options={filteredDepartments}
-                                renderOption={(department) => `${department.code} - ${department.name}`}
-                                dropdownParent="#roomScheduleModal"
-                                error={errors.department_id}
-                                help={data.branch_id
-                                    ? "No departments found for the selected branch."
-                                    : "Select a branch first before choosing a department."}
-                                disabled={!data.branch_id}
-                            />
-
-                            <SelectField
-                                id="schedule-subject"
-                                label="Subject"
-                                name="subject_id"
-                                placeholder={data.department_id ? "Select a subject" : "Select a department first"}
-                                value={data.subject_id}
-                                onChange={(val) => {
-                                    clearErrors("subject_id");
-                                    clearErrors("room_id");
-                                    setData((current) => ({
-                                        ...current,
-                                        subject_id: val,
-                                        room_id: "",
-                                    }));
-                                    resetAvailabilityState();
-                                }}
-                                options={filteredSubjects}
-                                renderOption={(subject) => `${subject.code} - ${subject.name}`}
-                                dropdownParent="#roomScheduleModal"
-                                error={errors.subject_id}
-                                help={data.department_id
-                                    ? "No subjects found for the selected department."
-                                    : "Select a department first before choosing a subject."}
-                                disabled={!data.department_id}
-                            />
-                        </div>
-
-                        <div className="col-lg-4">
-                            {summaryCard}
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {currentStep === 1 && (
-                <div className="row g-4">
-                    <div className="col-lg-8">
-                        <div className="alert alert-primary d-flex align-items-start gap-2" role="alert">
-                            <i className="bx bx-info-circle fs-5 mt-1"></i>
-                            <div>
-                                Rooms on the next step will be filtered using the chosen branch, day, and time window.
-                                Only rooms assigned to the selected department will appear.
-                            </div>
-                        </div>
-
-                        <div className="row">
-                            <div className="col-md-6">
-                                <InputField
-                                    id="schedule-section"
-                                    label="Section"
-                                    name="section"
-                                    icon="bx bx-grid-alt"
-                                    placeholder="BSIT-1A"
-                                    value={data.section}
-                                    onChange={(event) => {
-                                        clearErrors("section");
-                                        clearErrors("room_id");
-                                        setData("section", event.target.value.toUpperCase());
-                                    }}
-                                    error={errors.section}
-                                    help="Use the section name students will recognize."
-                                />
-                            </div>
-
-                            <div className="col-md-6">
-                                <SelectField
-                                    id="schedule-professor"
-                                    label="Professor"
-                                    name="professor_id"
-                                    placeholder="Select a professor"
-                                    value={data.professor_id}
-                                    onChange={(value) => {
-                                        clearErrors("professor_id");
-                                        setData("professor_id", value);
-                                    }}
-                                    options={professors}
-                                    dropdownParent="#roomScheduleModal"
-                                    error={errors.professor_id}
-                                    help="Create a professor first in Utilities if the person is not listed yet."
-                                />
-                            </div>
-                        </div>
-
-                        <SelectField
-                            id="schedule-day"
-                            label="Day"
-                            name="day_of_week"
-                            placeholder="Select a day"
-                            value={data.day_of_week}
-                            onChange={(val) => {
-                                clearErrors("day_of_week");
-                                clearErrors("room_id");
-                                setData((current) => ({
-                                    ...current,
-                                    day_of_week: val,
-                                    room_id: "",
-                                }));
-                                resetAvailabilityState();
-                            }}
-                            options={dayOptions}
-                            dropdownParent="#roomScheduleModal"
-                            error={errors.day_of_week}
-                        />
-
-                        <div className="row">
-                            <div className="col-md-6">
-                                <TimeSelectField
-                                    id="schedule-start-time"
-                                    label="Start Time"
-                                    name="start_time"
-                                    value={data.start_time}
-                                    onChange={(value) => {
-                                        clearErrors("start_time");
-                                        clearErrors("room_id");
-                                        setData((current) => ({
-                                            ...current,
-                                            start_time: value,
-                                            room_id: "",
-                                        }));
-                                        resetAvailabilityState();
-                                    }}
-                                    error={errors.start_time}
-                                    help="Allowed schedule window is 7:30 AM to 8:30 PM."
-                                />
-                            </div>
-
-                            <div className="col-md-6">
-                                <TimeSelectField
-                                    id="schedule-end-time"
-                                    label="End Time"
-                                    name="end_time"
-                                    value={data.end_time}
-                                    onChange={(value) => {
-                                        clearErrors("end_time");
-                                        clearErrors("room_id");
-                                        setData((current) => ({
-                                            ...current,
-                                            end_time: value,
-                                            room_id: "",
-                                        }));
-                                        resetAvailabilityState();
-                                    }}
-                                    error={errors.end_time}
-                                    help="Allowed schedule window is 7:30 AM to 8:30 PM."
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label className="form-label" htmlFor="schedule-notes">
-                                Notes
-                            </label>
-                            <textarea
-                                id="schedule-notes"
-                                name="notes"
-                                rows="4"
-                                className="form-control"
-                                placeholder="Optional notes about this schedule"
-                                value={data.notes}
-                                onChange={(event) => {
-                                    clearErrors("notes");
-                                    setData("notes", event.target.value);
-                                }}
-                                style={errors.notes ? { borderColor: "#fc4225" } : {}}
-                            />
-                            {errors.notes && (
-                                <div className="invalid-feedback d-block">{errors.notes}</div>
-                            )}
-                            {!errors.notes && (
-                                <div className="form-text">
-                                    Optional reminders such as shared equipment, lab setup, or room preferences.
+                            {!errors.room_id && availabilityStatus === "success" && availableRooms.length > 0 && (
+                                <div className="form-text mb-3">
+                                    Showing {availabilityMeta.available_count} available room(s) for{" "}
+                                    {selectedBranch?.name || "the selected branch"} / {selectedDepartment?.name || "the selected department"} on{" "}
+                                    {dayLabels[data.day_of_week] ?? data.day_of_week} from {formatTime(data.start_time)} to {formatTime(data.end_time)}.
                                 </div>
                             )}
-                        </div>
-                    </div>
 
-                    <div className="col-lg-4">
-                        {summaryCard}
-                    </div>
-                </div>
-            )}
-
-            {currentStep === 2 && (
-                <div className="row g-4">
-                    <div className="col-lg-8">
-                        <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                            <div>
-                                <h6 className="mb-1">Available Rooms</h6>
-                                <p className="text-muted mb-0">
-                                    Showing rooms that are open for{" "}
-                                    <span className="fw-semibold">
-                                        {selectedBranch?.name || "the selected branch"}
-                                    </span>{" "}
-                                    for{" "}
-                                    <span className="fw-semibold">
-                                        {selectedDepartment?.name || "the selected department"}
-                                    </span>{" "}
-                                    on{" "}
-                                    <span className="fw-semibold">
-                                        {dayLabels[data.day_of_week] ?? "the selected day"}
-                                    </span>{" "}
-                                    from{" "}
-                                    <span className="fw-semibold">
-                                        {formatTime(data.start_time)}
-                                    </span>{" "}
-                                    to{" "}
-                                    <span className="fw-semibold">
-                                        {formatTime(data.end_time)}
-                                    </span>.
-                                </p>
+                            <div className="mb-0">
+                                <label className="form-label" htmlFor="schedule-notes">
+                                    Notes
+                                </label>
+                                <textarea
+                                    id="schedule-notes"
+                                    name="notes"
+                                    rows="4"
+                                    className="form-control"
+                                    placeholder="Optional notes about this schedule"
+                                    value={data.notes}
+                                    onChange={(event) => {
+                                        clearErrors("notes");
+                                        setData("notes", event.target.value);
+                                    }}
+                                    style={errors.notes ? { borderColor: "#fc4225" } : {}}
+                                />
+                                {errors.notes && (
+                                    <div className="invalid-feedback d-block">{errors.notes}</div>
+                                )}
+                                {!errors.notes && (
+                                    <div className="form-text">
+                                        Optional reminders such as shared equipment, lab setup, or room preferences.
+                                    </div>
+                                )}
                             </div>
+                        </>
+                    )}
 
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="badge bg-label-primary">
-                                    {availabilityMeta.available_count} available
-                                </span>
-                                <span className="badge bg-label-secondary">
-                                    {availabilityMeta.total_rooms} in branch
-                                </span>
+                    <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 border-top pt-4 mt-4">
+                        <button
+                            type="button"
+                            className={`btn ${currentStep > 0 ? "btn-outline-secondary" : "btn-label-secondary"}`}
+                            onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+                            disabled={currentStep === 0}
+                        >
+                            <i className="bx bx-chevron-left me-1"></i>
+                            <span>Previous</span>
+                        </button>
+
+                        <div className="d-flex flex-wrap justify-content-end gap-2">
+                            {currentStep < FORM_STEPS.length - 1 ? (
                                 <button
                                     type="button"
-                                    className="btn btn-sm btn-outline-secondary"
-                                    onClick={loadAvailableRooms}
-                                    disabled={loadingAvailableRooms || !canLoadAvailability}
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        if (!validateStep(currentStep)) {
+                                            return;
+                                        }
+
+                                        setCurrentStep((step) => Math.min(step + 1, FORM_STEPS.length - 1));
+                                    }}
                                 >
-                                    Refresh
+                                    <span>Next</span>
+                                    <i className="bx bx-chevron-right ms-1"></i>
                                 </button>
-                            </div>
+                            ) : (
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={processing || loadingAvailableRooms || availabilityStatus === "idle"}
+                                >
+                                    {processing
+                                        ? "Saving..."
+                                        : (isEditing ? "Update Schedule" : "Save Schedule")}
+                                </button>
+                            )}
                         </div>
-
-                        {(loadingAvailableRooms || availabilityStatus === "idle") && (
-                            <div className="border rounded-4 p-4 text-center">
-                                <div className="spinner-border text-primary mb-3" role="status" aria-hidden="true"></div>
-                                <div className="fw-semibold">
-                                    {loadingAvailableRooms ? "Checking room availability..." : "Preparing room availability check..."}
-                                </div>
-                                <div className="text-muted small mt-1">
-                                    This checks the selected branch, department assignment, and time slot against saved schedules.
-                                </div>
-                            </div>
-                        )}
-
-                        {!loadingAvailableRooms && availabilityStatus === "error" && availabilityError && (
-                            <div className="alert alert-danger" role="alert">
-                                {availabilityError}
-                            </div>
-                        )}
-
-                        {!loadingAvailableRooms && availabilityStatus === "success" && !availabilityError && availableRooms.length === 0 && (
-                            <div className="alert alert-warning" role="alert">
-                                {availabilityMeta.total_rooms === 0
-                                    ? "No rooms are assigned yet for this department in the selected branch. Update room assignments first in Utilities > Room."
-                                    : "No assigned rooms are currently available for that branch, department, day, and time range. Try another schedule window."}
-                            </div>
-                        )}
-
-                        {!loadingAvailableRooms && availabilityStatus === "success" && !availabilityError && availableRooms.length > 0 && (
-                            <div className="row g-3">
-                                {availableRooms.map((room) => (
-                                    <div className="col-md-6" key={room.id}>
-                                        <RoomOptionCard
-                                            room={room}
-                                            selected={room.id?.toString() === data.room_id?.toString()}
-                                            onSelect={(roomId) => {
-                                                clearErrors("room_id");
-                                                setData("room_id", roomId?.toString());
-                                            }}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {errors.room_id && (
-                            <div className="invalid-feedback d-block mt-3">
-                                {errors.room_id}
-                            </div>
-                        )}
                     </div>
-
-                    <div className="col-lg-4">
-                        {summaryCard}
-                    </div>
-                </div>
-            )}
-        </ModalForm>
+                </form>
+            </div>
+        </div>
     );
 }
