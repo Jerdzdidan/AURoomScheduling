@@ -119,6 +119,7 @@ export default function CreateAndEditUser({ editId, departments = [], onSuccess 
                 value={data.name}
                 onChange={(event) => setData("name", event.target.value)}
                 error={errors.name}
+                required
             />
 
             <InputField
@@ -131,6 +132,7 @@ export default function CreateAndEditUser({ editId, departments = [], onSuccess 
                 value={data.email}
                 onChange={(event) => setData("email", event.target.value)}
                 error={errors.email}
+                required
             />
 
             <SelectField
@@ -143,6 +145,7 @@ export default function CreateAndEditUser({ editId, departments = [], onSuccess 
                 options={userTypeOptions}
                 dropdownParent="#userOffcanvas"
                 error={errors.user_type}
+                required
             />
 
             <SelectField
@@ -179,6 +182,7 @@ export default function CreateAndEditUser({ editId, departments = [], onSuccess 
                 value={data.password}
                 onChange={(event) => setData("password", event.target.value)}
                 error={errors.password}
+                required={!isEditing}
             />
 
             <InputField
@@ -191,6 +195,7 @@ export default function CreateAndEditUser({ editId, departments = [], onSuccess 
                 value={data.password_confirmation}
                 onChange={(event) => setData("password_confirmation", event.target.value)}
                 error={errors.password}
+                required={!isEditing}
             />
         </OffcanvasForm>
     );

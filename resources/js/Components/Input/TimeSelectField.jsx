@@ -52,6 +52,7 @@ export default function TimeSelectField({
     minTime = "07:30",
     maxTime = "20:30",
     stepMinutes = 5,
+    required = false,
 }) {
     const [query, setQuery] = useState("");
 
@@ -79,7 +80,12 @@ export default function TimeSelectField({
 
     return (
         <div className="mb-3">
-            {label && <label className="form-label" htmlFor={id}>{label}</label>}
+            {label && (
+                <label className="form-label" htmlFor={id}>
+                    {label}
+                    {required && <span className="text-danger"> *</span>}
+                </label>
+            )}
 
             <Combobox
                 value={selectedOption}

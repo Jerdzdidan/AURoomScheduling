@@ -89,6 +89,7 @@ export default function CreateAndEditBuilding({ editId, branches, onSuccess }) {
                 value={data.name}
                 onChange={(e) => setData('name', e.target.value)}
                 error={errors.name}
+                required
             />
 
             <InputField
@@ -100,6 +101,7 @@ export default function CreateAndEditBuilding({ editId, branches, onSuccess }) {
                 value={data.code}
                 onChange={(e) => setData('code', e.target.value.toUpperCase())}
                 error={errors.code}
+                required
             />
 
             <SelectField
@@ -113,6 +115,7 @@ export default function CreateAndEditBuilding({ editId, branches, onSuccess }) {
                 dropdownParent="#buildingOffcanvas"
                 error={errors.branch_id}
                 help="Create a branch first before adding a building."
+                required
             />
         </OffcanvasForm>
     );

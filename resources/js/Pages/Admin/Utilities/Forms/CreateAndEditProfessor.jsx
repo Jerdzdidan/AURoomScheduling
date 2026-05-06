@@ -85,6 +85,7 @@ export default function CreateAndEditProfessor({ editId, onSuccess }) {
                 value={data.name}
                 onChange={(e) => setData('name', e.target.value)}
                 error={errors.name}
+                required
             />
 
         </OffcanvasForm>

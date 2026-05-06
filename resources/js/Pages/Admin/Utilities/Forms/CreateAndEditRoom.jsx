@@ -232,6 +232,7 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
                 dropdownParent="#roomOffcanvas"
                 error={errors.branch_id}
                 help="Create a branch first before adding a room."
+                required
             />
 
             <SelectField
@@ -249,6 +250,7 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
                     ? 'No buildings found for the selected branch.'
                     : 'Select a branch first before choosing a building.'}
                 disabled={!data.branch_id}
+                required
             />
 
             <div className="mb-3">
@@ -338,6 +340,7 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
                 value={data.room_number}
                 onChange={handleRoomNumberChange}
                 error={errors.code}
+                required
             />
 
             <SelectField
@@ -353,6 +356,7 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
                 ]}
                 dropdownParent="#roomOffcanvas"
                 error={errors.type}
+                required
             />
         </OffcanvasForm>
     );

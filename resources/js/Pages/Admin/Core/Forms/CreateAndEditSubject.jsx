@@ -117,6 +117,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, su
                 dropdownParent="#subjectOffcanvas"
                 error={errors.branch_id}
                 help="Create a branch first before adding a subject."
+                required
             />
 
             <SelectField
@@ -134,6 +135,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, su
                     ? 'No departments found for the selected branch.'
                     : 'Select a branch first before choosing a department.'}
                 disabled={!data.branch_id}
+                required
             />
 
             <InputField
@@ -145,6 +147,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, su
                 value={data.code}
                 onChange={(e) => setData('code', e.target.value.toUpperCase())}
                 error={errors.code}
+                required
             />
 
             <InputField
@@ -156,6 +159,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, su
                 value={data.name}
                 onChange={(e) => setData('name', e.target.value)}
                 error={errors.name}
+                required
             />
 
             <SelectField
@@ -168,6 +172,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, su
                 options={subjectTypeOptions}
                 dropdownParent="#subjectOffcanvas"
                 error={errors.subject_type}
+                required
             />
 
             <SelectField
@@ -180,6 +185,7 @@ export default function CreateAndEditSubject({ editId, branches, departments, su
                 options={classTypeOptions}
                 dropdownParent="#subjectOffcanvas"
                 error={errors.class_type}
+                required
             />
         </OffcanvasForm>
     );

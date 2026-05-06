@@ -89,6 +89,7 @@ export default function CreateAndEditDepartment({ editId, branches, onSuccess })
                 value={data.name}
                 onChange={(e) => setData('name', e.target.value)}
                 error={errors.name}
+                required
             />
 
             <InputField
@@ -100,6 +101,7 @@ export default function CreateAndEditDepartment({ editId, branches, onSuccess })
                 value={data.code}
                 onChange={(e) => setData('code', e.target.value.toUpperCase())}
                 error={errors.code}
+                required
             />
 
             <SelectField
@@ -113,6 +115,7 @@ export default function CreateAndEditDepartment({ editId, branches, onSuccess })
                 dropdownParent="#departmentOffcanvas"
                 error={errors.branch_id}
                 help="Create a branch first before adding a department."
+                required
             />
         </OffcanvasForm>
     );

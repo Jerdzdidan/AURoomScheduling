@@ -1,36 +1,42 @@
-export default function InputField({ 
-    id, 
-    label, 
-    icon, 
-    type = 'text', 
-    name, 
-    placeholder = '', 
-    value, 
-    onChange, 
-    error, 
+export default function InputField({
+    id,
+    label,
+    icon,
+    type = 'text',
+    name,
+    placeholder = '',
+    value,
+    onChange,
+    error,
     help,
     disabled = false,
     readOnly = false,
+    required = false,
 }) {
     return (
         <div className="mb-3">
-            {label && <label className="form-label" htmlFor={id}>{label}</label>}
+            {label && (
+                <label className="form-label" htmlFor={id}>
+                    {label}
+                    {required && <span className="text-danger"> *</span>}
+                </label>
+            )}
             <div className={`input-group ${disabled ? '' : 'input-group-merge'} mb-2`}>
                 {icon && (
-                    <span className="input-group-text" style={{ 
+                    <span className="input-group-text" style={{
                         ...(error ? { borderColor: '#fc4225' } : {})
                     }}>
                         <i className={icon}></i>
                     </span>
                 )}
-                <input 
-                    type={type} 
-                    id={id} 
-                    name={name} 
-                    className="form-control" 
-                    placeholder={placeholder} 
-                    aria-label={label} 
-                    value={value} 
+                <input
+                    type={type}
+                    id={id}
+                    name={name}
+                    className="form-control"
+                    placeholder={placeholder}
+                    aria-label={label}
+                    value={value}
                     onChange={onChange}
                     disabled={disabled}
                     readOnly={readOnly}

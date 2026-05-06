@@ -123,8 +123,6 @@ export default function SelectField({
                 className="form-select"
                 defaultValue=""
                 disabled={disabled}
-                required={required}
-                aria-required={required}
             >
                 <option value=""></option>
                 {options.map((option) => (

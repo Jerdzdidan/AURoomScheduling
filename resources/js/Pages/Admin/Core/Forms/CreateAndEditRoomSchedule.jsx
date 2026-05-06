@@ -579,6 +579,7 @@ export default function CreateAndEditRoomSchedule({
                                         options={branches}
                                         error={errors.branch_id}
                                         help="Choose the branch first so the rest of the academic hierarchy stays accurate."
+                                        required
                                     />
                                 </div>
 
@@ -605,6 +606,7 @@ export default function CreateAndEditRoomSchedule({
                                             ? "No departments found for the selected branch."
                                             : "Select a branch first before choosing a department."}
                                         disabled={!data.branch_id}
+                                        required
                                     />
                                 </div>
                             </div>
@@ -631,6 +633,7 @@ export default function CreateAndEditRoomSchedule({
                                             ? "No subjects found for the selected department."
                                             : "Select a department first before choosing a subject."}
                                         disabled={!data.department_id}
+                                        required
                                     />
                                 </div>
                             </div>
@@ -670,7 +673,8 @@ export default function CreateAndEditRoomSchedule({
                                             setData("section", event.target.value.toUpperCase());
                                         }}
                                         error={errors.section}
-                                        help="Use the section name students will recognize."
+                                        help=""
+                                        required
                                     />
                                 </div>
 
@@ -688,6 +692,7 @@ export default function CreateAndEditRoomSchedule({
                                         options={professors}
                                         error={errors.professor_id}
                                         help="Create a professor first in Utilities if the person is not listed yet."
+                                        required
                                     />
                                 </div>
                             </div>
@@ -712,6 +717,7 @@ export default function CreateAndEditRoomSchedule({
                                         }}
                                         options={dayOptions}
                                         error={errors.day_of_week}
+                                        required
                                     />
                                 </div>
 
@@ -733,6 +739,7 @@ export default function CreateAndEditRoomSchedule({
                                         }}
                                         error={errors.start_time}
                                         help="Allowed schedule window is 7:30 AM to 8:30 PM."
+                                        required
                                     />
                                 </div>
 
@@ -754,6 +761,7 @@ export default function CreateAndEditRoomSchedule({
                                         }}
                                         error={errors.end_time}
                                         help="Allowed schedule window is 7:30 AM to 8:30 PM."
+                                        required
                                     />
                                 </div>
                             </div>
@@ -773,6 +781,7 @@ export default function CreateAndEditRoomSchedule({
                                 error={errors.room_id}
                                 help={roomFieldHelp}
                                 disabled={!canLoadAvailability || loadingAvailableRooms || availableRooms.length === 0}
+                                required
                             />
 
                             {!errors.room_id && availabilityStatus === "success" && availableRooms.length > 0 && (

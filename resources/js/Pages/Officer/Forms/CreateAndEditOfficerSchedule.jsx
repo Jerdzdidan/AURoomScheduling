@@ -463,6 +463,7 @@ export default function CreateAndEditOfficerSchedule({
                                 renderOption={(subject) => `${subject.name} (${subject.class_type || "N/A"})`}
                                 error={errors.subject_id}
                                 help="Only subjects from your department are listed."
+                                required
                             />
                         </div>
 
@@ -480,6 +481,7 @@ export default function CreateAndEditOfficerSchedule({
                                 }}
                                 error={errors.section}
                                 help=""
+                                required
                             />
                         </div>
                     </div>
@@ -498,6 +500,7 @@ export default function CreateAndEditOfficerSchedule({
                                 }}
                                 options={professors}
                                 error={errors.professor_id}
+                                required
                             />
                         </div>
 
@@ -533,6 +536,7 @@ export default function CreateAndEditOfficerSchedule({
                                     }}
                                     options={dayOptions}
                                     error={errors.day_of_week}
+                                    required
                                 />
                             )}
                         </div>
@@ -570,6 +574,7 @@ export default function CreateAndEditOfficerSchedule({
                                     }}
                                     error={errors.start_time}
                                     help="Allowed schedule window is 7:30 AM to 8:30 PM."
+                                    required
                                 />
                             )}
                         </div>
@@ -605,6 +610,7 @@ export default function CreateAndEditOfficerSchedule({
                                     }}
                                     error={errors.end_time}
                                     help="Allowed schedule window is 7:30 AM to 8:30 PM."
+                                    required
                                 />
                             )}
                         </div>
@@ -658,6 +664,7 @@ export default function CreateAndEditOfficerSchedule({
                                 error={errors.room_id}
                                 help={roomFieldHelp}
                                 disabled={!canLoadAvailability || loadingAvailableRooms || availableRooms.length === 0}
+                                required
                             />
 
                             {!errors.room_id && availabilityStatus === "success" && availableRooms.length > 0 && (

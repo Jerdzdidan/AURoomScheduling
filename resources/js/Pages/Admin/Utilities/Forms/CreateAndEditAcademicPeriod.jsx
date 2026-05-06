@@ -96,6 +96,7 @@ export default function CreateAndEditAcademicPeriod({ editId, onSuccess }) {
                 value={data.year_start}
                 onChange={(e) => setData('year_start', e.target.value)}
                 error={errors.year_start}
+                required
             />
 
             <InputField
@@ -108,6 +109,7 @@ export default function CreateAndEditAcademicPeriod({ editId, onSuccess }) {
                 value={data.year_end}
                 onChange={(e) => setData('year_end', e.target.value)}
                 error={errors.year_end}
+                required
             />
 
             <SelectField
@@ -120,6 +122,7 @@ export default function CreateAndEditAcademicPeriod({ editId, onSuccess }) {
                 options={semesterOptions}
                 dropdownParent="#academicPeriodOffcanvas"
                 error={errors.semester}
+                required
             />
         </OffcanvasForm>
     );
