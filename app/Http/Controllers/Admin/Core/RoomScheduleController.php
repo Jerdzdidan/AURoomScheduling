@@ -167,12 +167,6 @@ class RoomScheduleController extends Controller
         $validated = $request->validate([
             'academic_period_id' => ['required', 'integer', 'exists:academic_periods,id'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'department_id' => [
-                'required',
-                'integer',
-                Rule::exists('departments', 'id')
-                    ->where(fn($query) => $query->where('branch_id', $request->input('branch_id'))),
-            ],
             'day_of_week' => ['required', 'string', Rule::in(array_keys(self::DAY_LABELS))],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
@@ -200,8 +194,7 @@ class RoomScheduleController extends Controller
 
         $branchRooms = Room::query()
             ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.branch_id', $validated['branch_id'])
-            ->whereHas('departments', fn($query) => $query->whereKey($validated['department_id']));
+            ->where('buildings.branch_id', $validated['branch_id']);
 
         $totalRooms = (clone $branchRooms)->count();
 
@@ -228,7 +221,10 @@ class RoomScheduleController extends Controller
     {
         $validated = $this->validateSchedule($request);
 
-        RoomSchedule::create($this->buildSchedulePayload($validated));
+        RoomSchedule::create([
+            ...$this->buildSchedulePayload($validated),
+            'created_by_user_id' => auth()->id(),
+        ]);
 
         return to_route('admin.core.room-schedules.index');
     }
@@ -326,17 +322,6 @@ class RoomScheduleController extends Controller
         if (!$roomBelongsToBranch) {
             throw ValidationException::withMessages([
                 'room_id' => ['The selected room does not belong to the chosen branch.'],
-            ]);
-        }
-
-        $roomAssignedToDepartment = Room::query()
-            ->whereKey($validated['room_id'])
-            ->whereHas('departments', fn($query) => $query->whereKey($validated['department_id']))
-            ->exists();
-
-        if (!$roomAssignedToDepartment) {
-            throw ValidationException::withMessages([
-                'room_id' => ['The selected room is not assigned to the chosen department.'],
             ]);
         }
 
@@ -457,6 +442,7 @@ class RoomScheduleController extends Controller
                 'subjects.id',
                 'subjects.name',
                 'subjects.code',
+                'subjects.class_type',
                 'subjects.department_id',
                 'departments.name as department_name',
                 'departments.code as department_code',

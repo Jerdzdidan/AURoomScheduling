@@ -11,7 +11,6 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\DataTables;
 
 class RoomController extends Controller
@@ -132,7 +131,7 @@ class RoomController extends Controller
     {
         $validated = $this->validateRoom($request);
         $room = Room::create($this->buildRoomPayload($validated));
-        $room->departments()->sync($validated['department_ids']);
+        $room->departments()->sync($validated['department_ids'] ?? []);
 
         return redirect()->back()->with('success', 'Room created successfully.');
     }
@@ -142,10 +141,9 @@ class RoomController extends Controller
         try {
             $room = $this->findRoomOrFail($id);
             $validated = $this->validateRoom($request, $room);
-            $this->ensureScheduledDepartmentsRemainAssigned($room, $validated['department_ids']);
 
             $room->update($this->buildRoomPayload($validated));
-            $room->departments()->sync($validated['department_ids']);
+            $room->departments()->sync($validated['department_ids'] ?? []);
 
             return redirect()->back()->with('success', 'Room updated successfully.');
         } catch (DecryptException) {
@@ -202,7 +200,7 @@ class RoomController extends Controller
                 Rule::exists('buildings', 'id')
                     ->where(fn($query) => $query->where('branch_id', $request->input('branch_id'))),
             ],
-            'department_ids' => ['required', 'array', 'min:1'],
+            'department_ids' => ['nullable', 'array'],
             'department_ids.*' => [
                 'integer',
                 Rule::exists('departments', 'id')
@@ -218,36 +216,6 @@ class RoomController extends Controller
             'type' => $validated['type'],
             'building_id' => (int) $validated['building_id'],
         ];
-    }
-
-    private function ensureScheduledDepartmentsRemainAssigned(Room $room, array $departmentIds): void
-    {
-        $departmentIds = collect($departmentIds)->map(fn ($id) => (int) $id);
-
-        $scheduledDepartmentIds = $room->schedules()
-            ->join('subjects', 'room_schedules.subject_id', '=', 'subjects.id')
-            ->distinct()
-            ->pluck('subjects.department_id')
-            ->map(fn ($id) => (int) $id);
-
-        $missingDepartmentIds = $scheduledDepartmentIds
-            ->reject(fn ($departmentId) => $departmentIds->contains($departmentId))
-            ->values();
-
-        if ($missingDepartmentIds->isEmpty()) {
-            return;
-        }
-
-        $departmentLabels = Department::query()
-            ->whereIn('id', $missingDepartmentIds)
-            ->orderBy('code')
-            ->get(['code', 'name'])
-            ->map(fn (Department $department) => "{$department->code} - {$department->name}")
-            ->implode(', ');
-
-        throw ValidationException::withMessages([
-            'department_ids' => ["This room already has schedules under {$departmentLabels}. Keep those department assignments or move/delete the schedules first."],
-        ]);
     }
 
     private function findRoomOrFail(string $id): Room

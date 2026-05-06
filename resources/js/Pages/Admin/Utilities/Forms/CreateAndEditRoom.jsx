@@ -15,7 +15,7 @@ const getInitialValues = () => ({
 
 export default function CreateAndEditRoom({ editId, branches, departments, buildings, onSuccess }) {
     const isEditing = !!editId;
-    const { data, setData, post, put, processing, errors, clearErrors } = useForm(getInitialValues());
+    const { data, setData, post, put, processing, errors, clearErrors, reset } = useForm(getInitialValues());
     const [departmentPickerValue, setDepartmentPickerValue] = useState('');
 
     const filteredBuildings = useMemo(() => {
@@ -48,7 +48,8 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
 
     useEffect(() => {
         if (!editId) {
-            setData(getInitialValues());
+            reset();
+            setDepartmentPickerValue('');
             clearErrors();
             return;
         }
@@ -70,19 +71,19 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
             .fail(() => {
                 toastr.error('Failed to load room details.');
             });
-    }, [editId, clearErrors, setData]);
+    }, [editId, clearErrors, reset, setData]);
 
     useEffect(() => {
         const $offcanvas = $('#roomOffcanvas');
 
         $offcanvas.on('hidden.bs.offcanvas', () => {
-            setData(getInitialValues());
+            reset();
             setDepartmentPickerValue('');
             clearErrors();
         });
 
         return () => $offcanvas.off('hidden.bs.offcanvas');
-    }, [clearErrors, setData]);
+    }, [clearErrors, reset]);
 
     const updateRoomCode = (branchId, buildingId, roomNumber) => {
         const selectedBranch = branches.find(b => b.id.toString() === branchId?.toString());
@@ -122,19 +123,19 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
 
     const handleRoomNumberChange = (e) => {
         const val = e.target.value.toUpperCase();
-        setData({
-            ...data,
+        setData((current) => ({
+            ...current,
             room_number: val,
-            code: updateRoomCode(data.branch_id, data.building_id, val),
-        });
+            code: updateRoomCode(current.branch_id, current.building_id, val),
+        }));
     };
 
     const handleBuildingChange = (val) => {
-        setData({
-            ...data,
+        setData((current) => ({
+            ...current,
             building_id: val,
-            code: updateRoomCode(data.branch_id, val, data.room_number),
-        });
+            code: updateRoomCode(current.branch_id, val, current.room_number),
+        }));
     };
 
     const handleDepartmentSelect = (departmentId) => {
@@ -167,7 +168,7 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
 
         const options = {
             onSuccess: () => {
-                setData(getInitialValues());
+                reset();
                 setDepartmentPickerValue('');
                 $('#roomOffcanvas').offcanvas('hide');
                 toastr.success(
@@ -218,13 +219,13 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
                 placeholder="Select a branch"
                 value={data.branch_id}
                 onChange={(val) => {
-                    setData({
-                        ...data,
+                    setData((current) => ({
+                        ...current,
                         branch_id: val,
                         building_id: '',
                         code: '',
                         department_ids: [],
-                    });
+                    }));
                     setDepartmentPickerValue('');
                 }}
                 options={branches}
@@ -255,7 +256,7 @@ export default function CreateAndEditRoom({ editId, branches, departments, build
                     <div>
                         <label className="form-label mb-1">Assigned Departments</label>
                         <div className="form-text mt-0">
-                            Rooms only appear in scheduling for the departments assigned here.
+                            Optional. Assigned departments control which officers can schedule this room. You can leave this empty for rooms that are shared or not yet assigned.
                         </div>
                     </div>
 

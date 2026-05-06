@@ -90,7 +90,10 @@ export default function TimeSelectField({
                 nullable
             >
                 <div className="position-relative">
-                    <div className="input-group mb-2">
+                    <div
+                        className="input-group mb-2"
+                        style={error ? { border: "1px solid #fc4225", borderRadius: "0.375rem" } : {}}
+                    >
 
                         <ComboboxInput
                             id={id}
@@ -101,12 +104,12 @@ export default function TimeSelectField({
                             displayValue={(option) => option?.label ?? ""}
                             onChange={(event) => setQuery(event.target.value)}
                             onBlur={() => setQuery("")}
-                            style={error ? { borderColor: "#fc4225" } : {}}
+                            style={error ? { border: "none" } : {}}
                         />
 
                         <ComboboxButton
                             className="btn btn-outline-secondary bg-white border"
-                            style={error ? { borderColor: "#fc4225" } : {}}
+                            style={error ? { border: "none" } : {}}
                         >
                             <i className="bx bx-chevron-down"></i>
                         </ComboboxButton>

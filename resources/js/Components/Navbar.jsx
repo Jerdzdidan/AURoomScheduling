@@ -1,8 +1,11 @@
 import { usePage, Link } from '@inertiajs/react';
 
 export default function Navbar({ title }) {
-    const { auth } = usePage().props;
+    const { auth, officerDepartmentName } = usePage().props;
     const user = auth.user;
+    const userTypeLabel = user.user_type === "OFFICER" && officerDepartmentName
+        ? `${user.user_type} - ${officerDepartmentName}`
+        : user.user_type;
 
     return (
         <nav className="layout-navbar container-fluid navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
@@ -37,7 +40,7 @@ export default function Navbar({ title }) {
                 <ul className="navbar-nav flex-row align-items-center ms-md-auto">
                     <li className="nav-item lh-1 me-4 text-end">
                         <h6 className="mb-0">{user.name}</h6>
-                        <small className="text-body-secondary">{user.user_type}</small>
+                        <small className="text-body-secondary">{userTypeLabel}</small>
                     </li>
 
                     {/* User Dropdown */}
@@ -58,7 +61,7 @@ export default function Navbar({ title }) {
                                         </div>
                                         <div className="flex-grow-1">
                                             <h6 className="mb-0">{user.name}</h6>
-                                            <small className="text-body-secondary">{user.user_type}</small>
+                                            <small className="text-body-secondary">{userTypeLabel}</small>
                                         </div>
                                     </div>
                                 </a>

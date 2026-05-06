@@ -25,10 +25,10 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // if (!$user->status) {
-            //     Auth::logout();
-            //     return back()->with('error', 'Your account is inactive.');
-            // }
+            if (!$user->status) {
+                Auth::logout();
+                return back()->with('error', 'Your account is inactive.');
+            }
 
             $request->session()->regenerate();
 

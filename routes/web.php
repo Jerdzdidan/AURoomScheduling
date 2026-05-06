@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\Utilities\ProfessorController;
 use App\Http\Controllers\Admin\Utilities\RoomController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Officer\OfficerScheduleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\PreventSelfAction;
 use Illuminate\Foundation\Application;
@@ -160,5 +161,22 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::put('{id}', [ProfessorController::class, 'update'])->name('update');
             Route::delete('delete/{id}', [ProfessorController::class, 'destroy'])->name('delete');
         });
+    });
+});
+
+
+// OFFICER PANEL
+Route::prefix('officer')->middleware(['auth'])->name('officer.')->group(function () {
+    // INDEX (Calendar Page)
+    Route::get('/', [OfficerScheduleController::class, 'index'])->name('index');
+
+    Route::prefix('schedules')->name('schedules.')->group(function () {
+        Route::get('data', [OfficerScheduleController::class, 'getSchedules'])->name('data');
+        Route::get('create', [OfficerScheduleController::class, 'create'])->name('create');
+        Route::get('edit/{id}', [OfficerScheduleController::class, 'edit'])->name('edit');
+        Route::post('store', [OfficerScheduleController::class, 'store'])->name('store');
+        Route::put('{id}', [OfficerScheduleController::class, 'update'])->name('update');
+        Route::delete('delete/{id}', [OfficerScheduleController::class, 'destroy'])->name('delete');
+        Route::get('available-rooms', [OfficerScheduleController::class, 'getAvailableRooms'])->name('available-rooms');
     });
 });

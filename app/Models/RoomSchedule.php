@@ -11,6 +11,7 @@ class RoomSchedule extends Model
         'subject_id',
         'room_id',
         'professor_id',
+        'created_by_user_id',
         'section',
         'day_of_week',
         'start_time',
@@ -36,5 +37,10 @@ class RoomSchedule extends Model
     public function professor()
     {
         return $this->belongsTo(Professor::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 }

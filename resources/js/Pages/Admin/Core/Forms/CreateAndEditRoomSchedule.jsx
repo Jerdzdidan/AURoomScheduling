@@ -149,11 +149,6 @@ export default function CreateAndEditRoomSchedule({
         [branches],
     );
 
-    const departmentMap = useMemo(
-        () => new Map(departments.map((department) => [department.id?.toString(), department])),
-        [departments],
-    );
-
     const dayLabels = useMemo(
         () => Object.fromEntries(dayOptions.map((option) => [option.id, option.name])),
         [dayOptions],
@@ -168,13 +163,10 @@ export default function CreateAndEditRoomSchedule({
     }, [academicPeriodMap, currentAcademicPeriod, data.academic_period_id]);
 
     const selectedBranch = branchMap.get(data.branch_id?.toString());
-    const selectedDepartment = departmentMap.get(data.department_id?.toString());
-
     const availabilityKey = useMemo(
         () => [
             data.academic_period_id,
             data.branch_id,
-            data.department_id,
             data.day_of_week,
             data.start_time,
             data.end_time,
@@ -183,7 +175,6 @@ export default function CreateAndEditRoomSchedule({
         [
             data.academic_period_id,
             data.branch_id,
-            data.department_id,
             data.day_of_week,
             data.start_time,
             data.end_time,
@@ -194,7 +185,6 @@ export default function CreateAndEditRoomSchedule({
     const canLoadAvailability = Boolean(
         data.academic_period_id
         && data.branch_id
-        && data.department_id
         && data.day_of_week
         && data.start_time
         && data.end_time
@@ -332,9 +322,9 @@ export default function CreateAndEditRoomSchedule({
 
             if (!data.room_id) {
                 const roomMessage = availabilityMeta.total_rooms === 0
-                    ? "No rooms are registered for the selected branch and department yet."
+                    ? "No rooms are registered for the selected branch yet."
                     : availabilityMeta.available_count === 0
-                        ? "No rooms are available for the selected branch, department, and schedule window."
+                        ? "No rooms are available for the selected branch and schedule window."
                         : "Select one of the available rooms before saving.";
 
                 setError("room_id", roomMessage);
@@ -359,7 +349,6 @@ export default function CreateAndEditRoomSchedule({
         $.get(route("admin.core.room-schedules.available-rooms"), {
             academic_period_id: data.academic_period_id,
             branch_id: data.branch_id,
-            department_id: data.department_id,
             day_of_week: data.day_of_week,
             start_time: data.start_time,
             end_time: data.end_time,
@@ -399,26 +388,16 @@ export default function CreateAndEditRoomSchedule({
             return "Select the day, start time, and end time to load available rooms.";
         }
 
-        if (data.start_time && data.end_time && data.end_time <= data.start_time) {
-            return "End time must be later than start time to check available rooms.";
-        }
-
         if (availabilityStatus === "idle" && canLoadAvailability) {
-            return "Available rooms will load automatically for the selected branch, department, day, and time.";
+            return "Available rooms will load automatically for the selected branch, day, and time.";
         }
 
         if (loadingAvailableRooms) {
-            return "Checking room availability for the selected branch, department, day, and time.";
+            return "Checking room availability for the selected branch, day, and time.";
         }
 
         if (availabilityStatus === "error") {
             return availabilityError;
-        }
-
-        if (availabilityStatus === "success" && availableRooms.length === 0) {
-            return availabilityMeta.total_rooms === 0
-                ? "No rooms are assigned yet for this department in the selected branch. Update room assignments first in Utilities > Room."
-                : "No assigned rooms are currently available for that branch, department, day, and time range. Try another schedule window.";
         }
 
         return "";
@@ -470,6 +449,28 @@ export default function CreateAndEditRoomSchedule({
         loadAvailableRooms();
     }, [availabilityKey, currentStep]);
 
+    // Show inline error on end_time when it's not later than start_time
+    useEffect(() => {
+        if (data.start_time && data.end_time && data.end_time <= data.start_time) {
+            setError("end_time", "End time must be later than start time.");
+            setError("start_time", "Start time must be earlier than end time.");
+        } else {
+            clearErrors("end_time");
+            clearErrors("start_time");
+        }
+    }, [data.start_time, data.end_time]);
+
+    // Show error when no rooms are available after a successful check
+    useEffect(() => {
+        if (availabilityStatus !== "success" || availableRooms.length > 0) return;
+
+        const message = availabilityMeta.total_rooms === 0
+            ? "No rooms are registered yet for the selected branch. Add a room first in Utilities > Room."
+            : "No rooms are currently available for that branch, day, and time range. Try another schedule window.";
+
+        setError("room_id", message);
+    }, [availabilityStatus, availableRooms.length, availabilityMeta.total_rooms]);
+
     const handleSubmit = (event) => {
         event.preventDefault();
 
@@ -504,7 +505,7 @@ export default function CreateAndEditRoomSchedule({
                             {isEditing ? "Edit Room Schedule" : "Create Room Schedule"}
                         </h4>
                         <p className="text-muted mb-0">
-                            Assign the subject to an available room within the selected branch, department, and schedule window.
+                            Assign the subject to any available room within the selected branch and schedule window.
                         </p>
                     </div>
 
@@ -591,14 +592,11 @@ export default function CreateAndEditRoomSchedule({
                                         onChange={(value) => {
                                             clearErrors("department_id");
                                             clearErrors("subject_id");
-                                            clearErrors("room_id");
                                             setData((current) => ({
                                                 ...current,
                                                 department_id: value,
                                                 subject_id: "",
-                                                room_id: "",
                                             }));
-                                            resetAvailabilityState();
                                         }}
                                         options={filteredDepartments}
                                         renderOption={(department) => `${department.code} - ${department.name}`}
@@ -621,16 +619,13 @@ export default function CreateAndEditRoomSchedule({
                                         value={data.subject_id}
                                         onChange={(value) => {
                                             clearErrors("subject_id");
-                                            clearErrors("room_id");
                                             setData((current) => ({
                                                 ...current,
                                                 subject_id: value,
-                                                room_id: "",
                                             }));
-                                            resetAvailabilityState();
                                         }}
                                         options={filteredSubjects}
-                                        renderOption={(subject) => `${subject.code} - ${subject.name}`}
+                                        renderOption={(subject) => `${subject.name} (${subject.class_type || "N/A"})`}
                                         error={errors.subject_id}
                                         help={data.department_id
                                             ? "No subjects found for the selected department."
@@ -648,7 +643,7 @@ export default function CreateAndEditRoomSchedule({
                                 <div>
                                     <h6 className="mb-1">Schedule Details</h6>
                                     <p className="text-muted mb-0">
-                                        Available rooms update from the selected branch, department, day, and time window.
+                                        Available rooms update from the selected branch, day, and time window.
                                     </p>
                                 </div>
 
@@ -783,7 +778,7 @@ export default function CreateAndEditRoomSchedule({
                             {!errors.room_id && availabilityStatus === "success" && availableRooms.length > 0 && (
                                 <div className="form-text mb-3">
                                     Showing {availabilityMeta.available_count} available room(s) for{" "}
-                                    {selectedBranch?.name || "the selected branch"} / {selectedDepartment?.name || "the selected department"} on{" "}
+                                    {selectedBranch?.name || "the selected branch"} on{" "}
                                     {dayLabels[data.day_of_week] ?? data.day_of_week} from {formatTime(data.start_time)} to {formatTime(data.end_time)}.
                                 </div>
                             )}

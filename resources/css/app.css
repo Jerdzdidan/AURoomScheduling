@@ -21,7 +21,10 @@
     align-items: flex-start;
     gap: 0.875rem;
     text-align: left;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
 }
 
 .form-steps .form-step-button:not(:disabled):hover {
@@ -84,6 +87,555 @@
 .room-schedule-period-banner {
     border: 1px solid rgba(24, 85, 169, 0.12);
     border-radius: 1rem;
-    background: linear-gradient(135deg, rgba(24, 85, 169, 0.06) 0%, rgba(255, 255, 255, 1) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(24, 85, 169, 0.06) 0%,
+        rgba(255, 255, 255, 1) 100%
+    );
     padding: 1rem 1.125rem;
+}
+
+/* ── Officer Sidebar ─────────────────────────────────────────── */
+
+.officer-sidebar-create {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    background: #fff;
+    color: #1855a9;
+    transition:
+        background 0.18s ease,
+        transform 0.15s ease,
+        box-shadow 0.18s ease;
+}
+
+.officer-sidebar-create:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.officer-sidebar-create.active {
+    background: #b7303d;
+    color: #fff;
+}
+
+.officer-sidebar-create.active:hover {
+    background: #b7303d;
+    color: #fff;
+}
+
+.officer-sidebar-search {
+    width: 100%;
+    padding: 0.45rem 0.75rem 0.45rem 2.15rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 0.8rem;
+    outline: none;
+    transition:
+        border-color 0.18s ease,
+        background 0.18s ease;
+}
+
+.officer-sidebar-search::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.officer-sidebar-search:focus {
+    border-color: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.officer-sidebar-search-wrap {
+    position: relative;
+}
+
+.officer-sidebar-search-wrap .search-icon {
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    font-size: 0.85rem;
+}
+
+.officer-sidebar-building-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 0.25rem;
+    user-select: none;
+}
+
+.officer-sidebar-room-badge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.officer-sidebar-empty {
+    padding: 1rem;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* ── Officer Calendar Grid ───────────────────────────────────── */
+
+.officer-calendar-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 140px);
+    min-height: 480px;
+}
+
+.officer-calendar-header-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.officer-calendar-header-bar .room-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #22303e;
+    margin: 0;
+}
+
+.officer-calendar-header-bar .room-subtitle {
+    font-size: 0.8125rem;
+    color: #8692a6;
+    margin: 0;
+}
+
+.officer-calendar {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 64px repeat(7, 1fr);
+    grid-template-rows: auto 1fr;
+    border: 1px solid #e8ecf1;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #fff;
+    min-height: 0;
+}
+
+.officer-calendar-day-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #5a6a7e;
+    background: #f7f9fc;
+    border-bottom: 2px solid #e8ecf1;
+    border-right: 1px solid #eef1f5;
+    user-select: none;
+}
+
+.officer-calendar-day-header:first-child {
+    font-size: 0.65rem;
+    color: #a0aab4;
+}
+
+.officer-calendar-day-header:last-child {
+    border-right: none;
+}
+
+.officer-calendar-body {
+    display: contents;
+}
+
+.officer-calendar-time-col {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #eef1f5;
+    background: #fafbfd;
+    overflow-y: auto;
+}
+
+.officer-calendar-time-col::-webkit-scrollbar {
+    display: none;
+}
+
+.officer-calendar-time-label {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 0 0.4rem 0 0;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #a0aab4;
+    height: var(--slot-height, 40px);
+    transform: translateY(-0.45em);
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.officer-calendar-day-col {
+    grid-row: 2;
+    position: relative;
+    border-right: 1px solid #eef1f5;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.officer-calendar-day-col::-webkit-scrollbar {
+    display: none;
+}
+
+.officer-calendar-day-col:last-child {
+    border-right: none;
+}
+
+.officer-calendar-hour-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #eef1f5;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.officer-calendar-half-hour-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed #f2f4f7;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── Schedule Blocks ─────────────────────────────────────────── */
+
+.officer-schedule-block {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    border-radius: 0.35rem;
+    box-sizing: border-box;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    overflow: visible;
+    z-index: 1;
+    transition:
+        box-shadow 0.18s ease,
+        transform 0.1s ease;
+    cursor: default;
+}
+
+.officer-schedule-block-content {
+    padding: 0.3rem 0.45rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    border-radius: inherit;
+}
+
+.officer-schedule-block.own .officer-schedule-block-content {
+    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    border-left: 3px solid #1855a9;
+    color: #1e3a5f;
+    cursor: pointer;
+}
+
+.officer-schedule-block.own:hover .officer-schedule-block-content {
+    box-shadow: 0 4px 16px rgba(24, 85, 169, 0.18);
+}
+
+.officer-schedule-block.other .officer-schedule-block-content {
+    background: #f1f3f6;
+    border-left: 3px solid #c5ccd6;
+    color: #8692a6;
+}
+
+.officer-schedule-block.own {
+    cursor: pointer;
+}
+
+.officer-schedule-block.own:hover {
+    transform: scale(1.015);
+    z-index: 5;
+}
+
+.officer-schedule-block .block-subject {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.officer-schedule-block .block-section {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.8;
+}
+
+.officer-schedule-block .block-professor {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.62rem;
+    opacity: 0.78;
+}
+
+.officer-schedule-block .block-time {
+    font-size: 0.75rem;
+    opacity: 0.65;
+    margin-top: auto;
+}
+
+.officer-schedule-block .block-dept {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.7rem;
+}
+
+/* ── Schedule Tooltip ────────────────────────────────────────── */
+
+.officer-schedule-tooltip {
+    position: absolute;
+    z-index: 100;
+    background: #fff;
+    border: 1px solid #e0e5ec;
+    border-radius: 0.6rem;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    font-size: 0.8rem;
+    color: #22303e;
+    min-width: 220px;
+    max-width: 300px;
+    pointer-events: auto;
+    cursor: default;
+    animation: tooltipFadeIn 0.15s ease;
+}
+
+.officer-schedule-tooltip::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    background: transparent;
+}
+
+.officer-schedule-tooltip[data-side="right"]::before {
+    left: -12px;
+}
+
+.officer-schedule-tooltip[data-side="left"]::before {
+    right: -12px;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.officer-schedule-tooltip .tooltip-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    color: #1855a9;
+}
+
+.officer-schedule-tooltip .tooltip-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.15rem 0;
+    font-size: 0.78rem;
+}
+
+.officer-schedule-tooltip .tooltip-label {
+    font-weight: 600;
+    color: #5a6a7e;
+    white-space: nowrap;
+    min-width: 60px;
+}
+
+.officer-schedule-tooltip .tooltip-value {
+    color: #22303e;
+}
+
+.officer-schedule-tooltip .tooltip-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #eef1f5;
+}
+
+/* ── Empty State ─────────────────────────────────────────────── */
+
+.officer-calendar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 3rem;
+    text-align: center;
+    border: 2px dashed #e0e5ec;
+    border-radius: 1rem;
+    background: #fafbfd;
+    min-height: 400px;
+}
+
+.officer-calendar-empty .empty-icon {
+    font-size: 3.5rem;
+    color: #c5ccd6;
+    margin-bottom: 1rem;
+}
+
+.officer-calendar-empty .empty-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #5a6a7e;
+    margin-bottom: 0.35rem;
+}
+
+.officer-calendar-empty .empty-text {
+    font-size: 0.875rem;
+    color: #8692a6;
+    max-width: 340px;
+}
+
+/* ── Scrollbar sync for calendar columns ─────────────────────── */
+
+.officer-calendar-scroll-area {
+    display: contents;
+    overflow-y: auto;
+}
+
+.officer-calendar-scroll-container {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: 64px repeat(7, 1fr);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.officer-calendar-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.officer-calendar-scroll-container::-webkit-scrollbar-thumb {
+    background: #d0d5dd;
+    border-radius: 3px;
+}
+
+.officer-calendar-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.officer-calendar-time-col-inner {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #eef1f5;
+    background: #fafbfd;
+}
+
+.officer-calendar-day-col-inner {
+    position: relative;
+    border-right: 1px solid #eef1f5;
+    min-height: 0;
+}
+
+.officer-calendar-day-col-inner:last-child {
+    border-right: none;
+}
+
+/* ── Officer Form Banner ─────────────────────────────────────── */
+
+.officer-form-locked-field {
+    border: 1px solid rgba(24, 85, 169, 0.12);
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, rgba(24, 85, 169, 0.04) 0%, #fff 100%);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.officer-form-locked-field .locked-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: rgba(24, 85, 169, 0.1);
+    color: #1855a9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.officer-form-locked-field .locked-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #8692a6;
+}
+
+.officer-form-locked-field .locked-value {
+    font-weight: 600;
+    color: #22303e;
+    font-size: 0.875rem;
+}
+
+.officer-period-select .mb-3 {
+    margin-bottom: 0 !important;
 }

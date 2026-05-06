@@ -1,9 +1,29 @@
 import { Link, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 export default function Bar({ children }) {
     const { auth } = usePage().props;
     const user_type = auth.user.user_type;
     const url = user_type === "OFFICER" ? "officer.index" : "admin.index";
+
+    useEffect(() => {
+        const layoutMenuEl = document.getElementById('layout-menu');
+        let menuInstance = null;
+
+        if (layoutMenuEl && window.Menu && !layoutMenuEl.menuInstance) {
+            menuInstance = new window.Menu(layoutMenuEl, {
+                orientation: 'vertical',
+                closeChildren: false
+            });
+            window.Helpers.mainMenu = menuInstance;
+        }
+
+        return () => {
+            if (menuInstance && typeof menuInstance.destroy === 'function') {
+                menuInstance.destroy();
+            }
+        };
+    }, []);
 
     return (
         <aside id="layout-menu" className="layout-menu menu-vertical menu bg-menu-theme bg-primary">

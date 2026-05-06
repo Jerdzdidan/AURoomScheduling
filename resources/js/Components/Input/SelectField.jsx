@@ -31,6 +31,11 @@ export default function SelectField({
     required = false,
 }) {
     const selectRef = useRef(null);
+    const onChangeRef = useRef(onChange);
+
+    useEffect(() => {
+        onChangeRef.current = onChange;
+    }, [onChange]);
 
     const defaultRenderOption = (option) =>
         option.code ? `${option.code} - ${option.name}` : option.name;
@@ -60,7 +65,7 @@ export default function SelectField({
         $select.select2(config);
 
         $select.on('change', function () {
-            onChange($(this).val() || '');
+            onChangeRef.current?.($(this).val() || '');
         });
 
         return () => {
