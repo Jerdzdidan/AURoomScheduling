@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\UserManagement;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Department;
 use App\Models\User;
 use Exception;
@@ -18,6 +19,9 @@ class UserController extends Controller
     public function index()
     {
         return inertia('Admin/UserManagement/Users', [
+            'branches' => Branch::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']),
             'departments' => Department::query()
                 ->join('branches', 'departments.branch_id', '=', 'branches.id')
                 ->orderBy('branches.name')
@@ -91,6 +95,29 @@ class UserController extends Controller
                 'branches.name as branch_name',
                 'branches.code as branch_code',
             ]);
+
+        if ($userType = request()->input('filter_user_type')) {
+            $users->where('users.user_type', $userType);
+        }
+
+        if (request()->input('filter_status') !== null) {
+            $status = request()->input('filter_status');
+            $users->where('users.status', $status == '1' ? true : false);
+        }
+
+        if ($branchId = request()->input('filter_branch_id')) {
+            $users->where(function ($query) use ($branchId) {
+                $query->where('departments.branch_id', $branchId)
+                      ->orWhere('users.user_type', 'ADMIN');
+            });
+        }
+
+        if ($departmentId = request()->input('filter_department_id')) {
+            $users->where(function ($query) use ($departmentId) {
+                $query->where('users.department_id', $departmentId)
+                      ->orWhere('users.user_type', 'ADMIN');
+            });
+        }
 
         return DataTables::of($users)
             ->editColumn('id', function ($row) {

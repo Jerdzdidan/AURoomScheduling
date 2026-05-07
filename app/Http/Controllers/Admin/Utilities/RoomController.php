@@ -65,6 +65,24 @@ class RoomController extends Controller
                 'branches.code as branch_code',
             ]);
 
+        if ($branchId = request()->input('filter_branch_id')) {
+            $rooms->where('branches.id', $branchId);
+        }
+
+        if ($buildingId = request()->input('filter_building_id')) {
+            $rooms->where('buildings.id', $buildingId);
+        }
+
+        if ($roomType = request()->input('filter_room_type')) {
+            $rooms->where('rooms.type', $roomType);
+        }
+
+        if ($departmentId = request()->input('filter_department_id')) {
+            $rooms->whereHas('departments', function ($query) use ($departmentId) {
+                $query->where('departments.id', $departmentId);
+            });
+        }
+
         return DataTables::of($rooms)
             ->filter(function ($query) {
                 $search = request()->input('search.value');

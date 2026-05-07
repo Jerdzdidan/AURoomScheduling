@@ -36,6 +36,10 @@ class BuildingController extends Controller
             ])
             ->withCount(['rooms']);
 
+        if ($branchId = request()->input('filter_branch_id')) {
+            $buildings->where('buildings.branch_id', $branchId);
+        }
+
         return DataTables::of($buildings)
             ->filter(function ($query) {
                 $search = request()->input('search.value');

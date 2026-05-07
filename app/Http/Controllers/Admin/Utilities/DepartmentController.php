@@ -36,6 +36,10 @@ class DepartmentController extends Controller
             ])
             ->withCount(['subjects', 'users']);
 
+        if ($branchId = request()->input('filter_branch_id')) {
+            $departments->where('departments.branch_id', $branchId);
+        }
+
         return DataTables::of($departments)
             ->filter(function ($query) {
                 $search = request()->input('search.value');

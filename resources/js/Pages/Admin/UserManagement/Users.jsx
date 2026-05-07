@@ -7,10 +7,23 @@ import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
 import Base from "@/Layouts/Base";
 import CreateAndEditUser from "./Forms/CreateAndEditUser";
+import FilterUserOffcanvas from "./Forms/FilterUserOffcanvas";
 
 export default function Users() {
-    const { departments = [] } = usePage().props;
+    const { branches = [], departments = [] } = usePage().props;
     const tableRef = useRef(null);
+    const filtersRef = useRef({
+        user_type: "",
+        status: "",
+        branch_id: "",
+        department_id: "",
+    });
+    const [filters, setFilters] = useState({
+        user_type: "",
+        status: "",
+        branch_id: "",
+        department_id: "",
+    });
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
@@ -51,6 +64,12 @@ export default function Users() {
                 top2End: {
                     features: [{
                         buttons: [{
+                            text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-filter-alt icon-sm"></i></span>',
+                            className: "btn btn-info me-4",
+                            action: function () {
+                                $("#filterUserOffcanvas").offcanvas("show");
+                            },
+                        }, {
                             extend: "collection",
                             className: "btn btn-label-primary dropdown-toggle me-4",
                             text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-export me-sm-1"></i> <span class="d-none d-sm-inline-block">Export</span></span>',
@@ -104,7 +123,18 @@ export default function Users() {
                 },
             },
             autoWidth: false,
-            ajax: route("admin.users.data"),
+            initComplete: function () {
+                $(".dt-buttons").removeClass("btn-group");
+            },
+            ajax: {
+                url: route("admin.users.data"),
+                data: function (d) {
+                    d.filter_user_type = filtersRef.current.user_type;
+                    d.filter_status = filtersRef.current.status;
+                    d.filter_branch_id = filtersRef.current.branch_id;
+                    d.filter_department_id = filtersRef.current.department_id;
+                },
+            },
             columns: [
                 { data: "id", visible: false },
                 { data: "name", width: "20%" },
@@ -256,6 +286,13 @@ export default function Users() {
         };
     }, []);
 
+    const applyFilters = (overrideFilters) => {
+        filtersRef.current = { ...(overrideFilters ?? filters) };
+        if (tableRef.current) {
+            tableRef.current.ajax.reload(null, true);
+        }
+    };
+
     const handleSuccess = () => {
         setEditId(null);
 
@@ -318,6 +355,14 @@ export default function Users() {
                     editId={editId}
                     departments={departments}
                     onSuccess={handleSuccess}
+                />
+
+                <FilterUserOffcanvas
+                    filters={filters}
+                    setFilters={setFilters}
+                    branches={branches}
+                    departments={departments}
+                    onApply={applyFilters}
                 />
             </Base>
         </>

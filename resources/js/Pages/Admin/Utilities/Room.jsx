@@ -5,12 +5,25 @@ import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
 import CreateAndEditRoom from "./Forms/CreateAndEditRoom";
+import FilterRoomOffcanvas from "./Forms/FilterRoomOffcanvas";
 import { LuDoorOpen, LuBuilding2 } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 export default function Room() {
     const { branches = [], departments = [], buildings = [] } = usePage().props;
     const tableRef = useRef(null);
+    const filtersRef = useRef({
+        branch_id: "",
+        building_id: "",
+        room_type: "",
+        department_id: "",
+    });
+    const [filters, setFilters] = useState({
+        branch_id: "",
+        building_id: "",
+        room_type: "",
+        department_id: "",
+    });
     const [editId, setEditId] = useState(null);
 
     const loadStats = () => {
@@ -50,6 +63,12 @@ export default function Room() {
                 top2End: {
                     features: [{
                         buttons: [{
+                            text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-filter-alt icon-sm"></i></span>',
+                            className: "btn btn-info me-4",
+                            action: function () {
+                                $("#filterRoomOffcanvas").offcanvas("show");
+                            },
+                        }, {
                             extend: "collection",
                             className: "btn btn-label-primary dropdown-toggle me-4",
                             text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-export me-sm-1"></i> <span class="d-none d-sm-inline-block">Export</span></span>',
@@ -93,7 +112,18 @@ export default function Room() {
                 }
             },
             autoWidth: false,
-            ajax: route('admin.utilities.rooms.data'),
+            initComplete: function () {
+                $(".dt-buttons").removeClass("btn-group");
+            },
+            ajax: {
+                url: route("admin.utilities.rooms.data"),
+                data: function (d) {
+                    d.filter_branch_id = filtersRef.current.branch_id;
+                    d.filter_building_id = filtersRef.current.building_id;
+                    d.filter_room_type = filtersRef.current.room_type;
+                    d.filter_department_id = filtersRef.current.department_id;
+                },
+            },
             columns: [
                 { data: "id", visible: false },
                 { data: "code", width: "25%" },
@@ -209,6 +239,13 @@ export default function Room() {
         };
     }, []);
 
+    const applyFilters = (overrideFilters) => {
+        filtersRef.current = { ...(overrideFilters ?? filters) };
+        if (tableRef.current) {
+            tableRef.current.ajax.reload(null, true);
+        }
+    };
+
     const handleSuccess = () => {
         setEditId(null);
 
@@ -263,6 +300,15 @@ export default function Room() {
                     departments={departments}
                     buildings={buildings}
                     onSuccess={handleSuccess}
+                />
+
+                <FilterRoomOffcanvas
+                    filters={filters}
+                    setFilters={setFilters}
+                    branches={branches}
+                    buildings={buildings}
+                    departments={departments}
+                    onApply={applyFilters}
                 />
             </Base>
         </>
