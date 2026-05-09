@@ -5,7 +5,8 @@ import Bar from "@/Components/Sidebar/Bar";
 import {
     LuCalendarRange, LuHouse, LuBookText,
     LuSchool, LuUniversity, LuDoorOpen, LuBuilding2,
-    LuLayoutList, LuUsers, LuIdCard, LuPlus, LuSearch
+    LuLayoutList, LuUsers, LuIdCard, LuPlus, LuSearch,
+    LuCalendarCheck,
 } from "react-icons/lu";
 
 function Admin() {
@@ -59,6 +60,16 @@ function Admin() {
             />
 
             <li className="menu-header small text-uppercase">
+                <span className="menu-header-text text-white">Reports</span>
+            </li>
+
+            <SidebarItem
+                routeName="admin.reports.room-utilization.index"
+                Icon={LuCalendarCheck}
+                name="Room Utilization"
+            />
+
+            <li className="menu-header small text-uppercase">
                 <span className="menu-header-text text-white">User Management</span>
             </li>
 
@@ -107,6 +118,7 @@ function Admin() {
                 Icon={LuIdCard}
                 name="Professors"
             />
+
         </Bar>
     );
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Utilities\DepartmentController;
 use App\Http\Controllers\Admin\Utilities\BuildingController;
 use App\Http\Controllers\Admin\Core\RoomScheduleController;
 use App\Http\Controllers\Admin\Core\SubjectController;
+use App\Http\Controllers\Admin\Reports\RoomUtilizationController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\Utilities\ProfessorController;
 use App\Http\Controllers\Admin\Utilities\RoomController;
@@ -97,6 +98,13 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::get('{id}', [SubjectController::class, 'show'])->name('show');
             Route::put('{id}', [SubjectController::class, 'update'])->name('update');
             Route::delete('delete/{id}', [SubjectController::class, 'destroy'])->name('delete');
+        });
+    });
+
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::prefix('room-utilization')->name('room-utilization.')->group(function () {
+            Route::get('/', [RoomUtilizationController::class, 'index'])->name('index');
+            Route::get('search', [RoomUtilizationController::class, 'search'])->name('search');
         });
     });
 
