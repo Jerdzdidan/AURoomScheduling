@@ -183,6 +183,7 @@ Route::prefix('officer')->middleware(['auth'])->name('officer.')->group(function
         Route::get('create', [OfficerScheduleController::class, 'create'])->name('create');
         Route::get('edit/{id}', [OfficerScheduleController::class, 'edit'])->name('edit');
         Route::post('store', [OfficerScheduleController::class, 'store'])->name('store');
+        Route::post('ajax-store', [OfficerScheduleController::class, 'ajaxStore'])->name('ajax-store');
         Route::put('{id}', [OfficerScheduleController::class, 'update'])->name('update');
         Route::delete('delete/{id}', [OfficerScheduleController::class, 'destroy'])->name('delete');
         Route::get('available-rooms', [OfficerScheduleController::class, 'getAvailableRooms'])->name('available-rooms');

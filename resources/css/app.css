@@ -639,3 +639,274 @@
 .officer-period-select .mb-3 {
     margin-bottom: 0 !important;
 }
+
+/* ── Inline Schedule Popover ────────────────────────────────── */
+
+.officer-popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(0, 0, 0, 0.15);
+    animation: popoverBackdropFadeIn 0.15s ease;
+}
+
+@keyframes popoverBackdropFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.officer-inline-popover {
+    z-index: 100;
+    background: #fff;
+    border: 1px solid #e0e5ec;
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.08);
+    width: 380px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1rem 1.125rem;
+    animation: popoverSlideIn 0.18s ease;
+}
+
+.officer-inline-popover::-webkit-scrollbar {
+    width: 5px;
+}
+
+.officer-inline-popover::-webkit-scrollbar-thumb {
+    background: #d0d5dd;
+    border-radius: 3px;
+}
+
+@keyframes popoverSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.officer-inline-popover .popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.officer-inline-popover .popover-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #22303e;
+    margin: 0;
+}
+
+.officer-inline-popover .popover-close-btn {
+    border: none;
+    background: none;
+    padding: 0.25rem;
+    border-radius: 0.35rem;
+    color: #8692a6;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.officer-inline-popover .popover-close-btn:hover {
+    background: #f1f3f6;
+    color: #22303e;
+}
+
+.officer-inline-popover .popover-locked-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.officer-inline-popover .popover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(24, 85, 169, 0.08);
+    color: #1855a9;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.officer-inline-popover .popover-time-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.officer-inline-popover .popover-time-field {
+    flex: 1;
+}
+
+.officer-inline-popover .popover-time-separator {
+    padding-top: 1.6rem;
+    color: #8692a6;
+    font-weight: 600;
+}
+
+.officer-inline-popover .popover-field-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #5a6a7e;
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.officer-inline-popover .popover-field {
+    margin-bottom: 0.5rem;
+}
+
+/* Override SelectField / TimeSelectField margin within popover */
+.officer-inline-popover .popover-field .mb-3,
+.officer-inline-popover .popover-time-field .mb-3 {
+    margin-bottom: 0 !important;
+}
+
+.officer-inline-popover .popover-time-field .form-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #5a6a7e;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.2rem;
+}
+
+.officer-inline-popover .popover-time-field .form-control,
+.officer-inline-popover .popover-time-field .btn {
+    font-size: 0.8rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+}
+
+.officer-inline-popover .popover-conflicts {
+    background: rgba(252, 66, 37, 0.06);
+    border: 1px solid rgba(252, 66, 37, 0.15);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    margin-bottom: 0.5rem;
+}
+
+.officer-inline-popover .popover-conflict-item {
+    font-size: 0.72rem;
+    color: #c0392b;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.officer-inline-popover .popover-conflict-item + .popover-conflict-item {
+    margin-top: 0.25rem;
+}
+
+.officer-inline-popover .popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid #eef1f5;
+    margin-top: 0.5rem;
+}
+
+/* ── Ghost Block ────────────────────────────────────────────── */
+
+.officer-ghost-block {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    border-radius: 0.35rem;
+    background: rgba(24, 85, 169, 0.1);
+    border: 2px dashed rgba(24, 85, 169, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    color: #1855a9;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 2;
+    animation: ghostPulse 1.5s ease-in-out infinite;
+}
+
+.officer-ghost-block span:last-child {
+    font-size: 0.62rem;
+    font-weight: 500;
+    opacity: 0.7;
+}
+
+@keyframes ghostPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+/* ── Day Recurrence Selector ────────────────────────────────── */
+
+.day-recurrence-selector {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.day-recurrence-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #d0d5dd;
+    background: #fff;
+    color: #5a6a7e;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.1s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.day-recurrence-btn:hover {
+    border-color: #1855a9;
+    color: #1855a9;
+    transform: scale(1.08);
+}
+
+.day-recurrence-btn.active {
+    background: #1855a9;
+    border-color: #1855a9;
+    color: #fff;
+}
+
+.day-recurrence-btn.active:hover {
+    background: #14488e;
+    border-color: #14488e;
+}
+
+.day-recurrence-btn.locked {
+    cursor: default;
+}
+
+.day-recurrence-btn.active.locked {
+    background: #1855a9;
+    border-color: #1855a9;
+    opacity: 0.85;
+}
+

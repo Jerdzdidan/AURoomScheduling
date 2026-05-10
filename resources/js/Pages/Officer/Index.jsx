@@ -2,6 +2,7 @@ import { Head, router, usePage } from "@inertiajs/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Base from "@/Layouts/Base";
 import SelectField from "@/Components/Input/SelectField";
+import InlineSchedulePopover from "./Forms/InlineSchedulePopover";
 import { LuDoorOpen, LuCalendarRange, LuTrash2 } from "react-icons/lu";
 import { BiSolidEdit } from "react-icons/bi";
 
@@ -265,15 +266,64 @@ function ScheduleBlock({ schedule, onEdit, onDelete }) {
     );
 }
 
-function DayColumn({ day, schedules, onEdit, onDelete }) {
+function DayColumn({ day, schedules, onEdit, onDelete, onEmptyClick, ghostBlock }) {
     const daySchedules = useMemo(
         () => schedules.filter((s) => s.day_of_week === day),
         [schedules, day],
     );
 
+    const handleClick = (e) => {
+        // Only fire if clicking the column background, not a schedule block
+        if (e.target !== e.currentTarget && !e.target.classList.contains("officer-calendar-hour-line") && !e.target.classList.contains("officer-calendar-half-hour-line")) {
+            return;
+        }
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickY = e.clientY - rect.top + e.currentTarget.parentElement.scrollTop;
+
+        // Snap down to the start of the 30-minute row the user clicked
+        const rawMinutes = (clickY / PX_PER_MINUTE) - TOP_PADDING_MINUTES;
+        const snappedMinutes = Math.max(0, Math.floor(rawMinutes / 30) * 30);
+        const startH = START_HOUR + Math.floor(snappedMinutes / 60);
+        const startM = snappedMinutes % 60;
+
+        if (startH >= END_HOUR) return; // Can't start at or after end
+
+        const endH = Math.min(startH + 1, END_HOUR);
+        const endM = startH + 1 >= END_HOUR ? 0 : startM;
+
+        const startTime = `${String(startH).padStart(2, "0")}:${String(startM).padStart(2, "0")}`;
+        const endTime = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+
+        // Get the anchor rect for popover positioning (click position in viewport)
+        const anchorRect = {
+            top: e.clientY - 20,
+            bottom: e.clientY + 20,
+            left: rect.left,
+            right: rect.right,
+        };
+
+        onEmptyClick?.({ day, startTime, endTime, anchorRect });
+    };
+
     return (
-        <div className="officer-calendar-day-col-inner" style={{ height: `${totalHeight}px` }}>
+        <div
+            className="officer-calendar-day-col-inner"
+            style={{ height: `${totalHeight}px` }}
+            onClick={handleClick}
+        >
             <HourLines />
+
+            {/* Ghost block preview */}
+            {ghostBlock && ghostBlock.day === day && (
+                <div
+                    className="officer-ghost-block"
+                    style={getBlockStyle(ghostBlock.startTime, ghostBlock.endTime)}
+                >
+                    <span>New Schedule</span>
+                    <span>{formatTime12(ghostBlock.startTime)} – {formatTime12(ghostBlock.endTime)}</span>
+                </div>
+            )}
 
             {daySchedules.map((schedule, index) => (
                 <ScheduleBlock
@@ -295,6 +345,9 @@ export default function Index() {
         currentAcademicPeriodId,
         departmentCode,
         branchCode,
+        subjects = [],
+        professors = [],
+        currentAcademicPeriod = null,
     } = page.props;
 
     const pageQuery = useMemo(
@@ -312,6 +365,10 @@ export default function Index() {
     );
     const [schedules, setSchedules] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // Inline popover state
+    const [popoverData, setPopoverData] = useState(null);
+    const calendarRef = useRef(null);
 
     const selectedRoom = useMemo(
         () => rooms.find((r) => String(r.id) === String(selectedRoomId)),
@@ -427,6 +484,39 @@ export default function Index() {
         });
     };
 
+    const handleEmptyClick = ({ day, startTime, endTime, anchorRect }) => {
+        // Only allow creation when a room is selected and period chosen
+        if (!selectedRoom || !selectedPeriodId) return;
+
+        // Only allow on rooms assigned to the officer's department
+        if (!selectedRoom.is_assigned_to_department) {
+            toastr.warning("You can only create schedules on rooms assigned to your department.");
+            return;
+        }
+
+        // Only allow for current academic period
+        if (!currentAcademicPeriod) {
+            toastr.warning("No current academic period is set. Contact your administrator.");
+            return;
+        }
+
+        if (String(selectedPeriodId) !== String(currentAcademicPeriodId)) {
+            toastr.warning("You can only create new schedules in the current academic period.");
+            return;
+        }
+
+        setPopoverData({ day, startTime, endTime, anchorRect });
+    };
+
+    const handlePopoverClose = () => {
+        setPopoverData(null);
+    };
+
+    const handlePopoverSaved = () => {
+        setPopoverData(null);
+        loadSchedules();
+    };
+
     // No rooms available in the officer's branch
     if (rooms.length === 0) {
         return (
@@ -506,7 +596,7 @@ export default function Index() {
 
                     {/* ── Calendar Grid ──────────────────────── */}
                     {selectedRoom && selectedPeriodId ? (
-                        <div className="officer-calendar" style={{ position: "relative" }}>
+                        <div ref={calendarRef} className="officer-calendar" style={{ position: "relative" }}>
                             {/* Day headers */}
                             <div className="officer-calendar-day-header">Time</div>
 
@@ -525,6 +615,8 @@ export default function Index() {
                                         schedules={schedules}
                                         onEdit={handleEdit}
                                         onDelete={handleDelete}
+                                        onEmptyClick={handleEmptyClick}
+                                        ghostBlock={popoverData}
                                     />
                                 ))}
                             </div>
@@ -561,6 +653,23 @@ export default function Index() {
                                     : "Select an academic period from the dropdown above to view schedules."}
                             </div>
                         </div>
+                    )}
+
+                    {/* Inline schedule popover */}
+                    {popoverData && selectedRoom && (
+                        <InlineSchedulePopover
+                            day={popoverData.day}
+                            startTime={popoverData.startTime}
+                            endTime={popoverData.endTime}
+                            room={selectedRoom}
+                            subjects={subjects}
+                            professors={professors}
+                            currentAcademicPeriodId={currentAcademicPeriodId}
+                            anchorRect={popoverData.anchorRect}
+                            calendarRect={calendarRef.current?.getBoundingClientRect()}
+                            onClose={handlePopoverClose}
+                            onSaved={handlePopoverSaved}
+                        />
                     )}
                 </div>
             </Base>

@@ -48,6 +48,15 @@ class OfficerScheduleController extends Controller
             'departmentCode' => $department?->code,
             'branchName' => $branch?->name,
             'branchCode' => $branch?->code,
+            // Inline popover form data
+            'subjects' => Subject::query()
+                ->where('department_id', $department?->id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'class_type', 'department_id']),
+            'professors' => Professor::query()
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'currentAcademicPeriod' => $this->getCurrentAcademicPeriod(),
         ]);
     }
 
@@ -175,6 +184,140 @@ class OfficerScheduleController extends Controller
 
         return to_route('officer.index', [
             'room_id' => $validated['room_id'],
+        ]);
+    }
+
+    public function ajaxStore(Request $request)
+    {
+        $user = auth()->user();
+        $department = $user->department;
+        $branch = $department?->branch;
+
+        $request->merge([
+            'section' => strtoupper(trim((string) $request->input('section'))),
+            'notes' => trim((string) $request->input('notes')),
+        ]);
+
+        $validated = $request->validate([
+            'academic_period_id' => ['required', 'integer', 'exists:academic_periods,id'],
+            'subject_id' => [
+                'required',
+                'integer',
+                Rule::exists('subjects', 'id')
+                    ->where(fn($query) => $query->where('department_id', $department?->id)),
+            ],
+            'room_id' => ['required', 'integer', 'exists:rooms,id'],
+            'section' => ['required', 'string', 'max:255'],
+            'days_of_week' => ['required', 'array', 'min:1'],
+            'days_of_week.*' => ['required', 'string', Rule::in(array_keys(self::DAY_LABELS))],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'professor_id' => ['required', 'integer', 'exists:professors,id'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        // Lock academic period to current
+        $currentPeriodId = (int) (AcademicPeriod::query()->where('is_current', true)->value('id') ?? 0);
+
+        if (!$currentPeriodId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Set a current academic period first before adding room schedules.',
+            ], 422);
+        }
+
+        if ((int) $validated['academic_period_id'] !== $currentPeriodId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'New room schedules can only be created for the current academic period.',
+            ], 422);
+        }
+
+        $this->validateTimeWindow($validated['start_time'], 'start_time');
+        $this->validateTimeWindow($validated['end_time'], 'end_time');
+
+        // Room must belong to the officer's branch
+        $roomBelongsToBranch = Room::query()
+            ->whereKey($validated['room_id'])
+            ->whereHas('building', fn($query) => $query->where('branch_id', $branch?->id))
+            ->exists();
+
+        if (!$roomBelongsToBranch) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The selected room does not belong to your branch.',
+            ], 422);
+        }
+
+        // Room must be assigned to the officer's department
+        $roomAssignedToDepartment = Room::query()
+            ->whereKey($validated['room_id'])
+            ->whereHas('departments', fn($query) => $query->whereKey($department?->id))
+            ->exists();
+
+        if (!$roomAssignedToDepartment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The selected room is not assigned to your department.',
+            ], 422);
+        }
+
+        // Check conflicts for each selected day
+        $conflicts = [];
+
+        foreach ($validated['days_of_week'] as $day) {
+            $conflict = RoomSchedule::query()
+                ->with(['subject:id,name,code', 'room:id,code'])
+                ->where('academic_period_id', $validated['academic_period_id'])
+                ->where('room_id', $validated['room_id'])
+                ->where('day_of_week', $day)
+                ->where('start_time', '<', $validated['end_time'])
+                ->where('end_time', '>', $validated['start_time'])
+                ->first();
+
+            if ($conflict) {
+                $dayLabel = self::DAY_LABELS[$day] ?? $day;
+                $timeLabel = $this->formatTimeRange($conflict->start_time, $conflict->end_time);
+                $subjectLabel = trim(($conflict->subject?->code ?? '') . ' ' . ($conflict->section ?? ''));
+
+                $conflicts[$day] = "$dayLabel is already taken at $timeLabel for $subjectLabel.";
+            }
+        }
+
+        if (!empty($conflicts)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Schedule conflicts found on one or more days.',
+                'conflicts' => $conflicts,
+            ], 422);
+        }
+
+        // Create a schedule for each selected day
+        $createdCount = 0;
+
+        foreach ($validated['days_of_week'] as $day) {
+            RoomSchedule::create([
+                'academic_period_id' => (int) $validated['academic_period_id'],
+                'subject_id' => (int) $validated['subject_id'],
+                'room_id' => (int) $validated['room_id'],
+                'professor_id' => (int) $validated['professor_id'],
+                'section' => $validated['section'],
+                'day_of_week' => $day,
+                'start_time' => $validated['start_time'],
+                'end_time' => $validated['end_time'],
+                'notes' => $validated['notes'] ?: null,
+                'created_by_user_id' => $user->id,
+            ]);
+
+            $createdCount++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $createdCount === 1
+                ? 'Room schedule created successfully.'
+                : "$createdCount room schedules created successfully.",
+            'created_count' => $createdCount,
         ]);
     }
 
