@@ -29,6 +29,7 @@ export default function SelectField({
     help,
     disabled = false,
     required = false,
+    wrapperClassName = "mb-3",
 }) {
     const selectRef = useRef(null);
     const onChangeRef = useRef(onChange);
@@ -109,7 +110,7 @@ export default function SelectField({
     }, [error]);
 
     return (
-        <div className="mb-3">
+        <div className={wrapperClassName}>
             {label && (
                 <label className="form-label" htmlFor={id}>
                     {label}

@@ -20,7 +20,7 @@ const FORM_STEPS = [
     },
 ];
 
-const getInitialValues = (currentAcademicPeriodId, roomSchedule = null) => ({
+const getInitialValues = (currentAcademicPeriodId, roomSchedule = null, returnContext = "") => ({
     academic_period_id: roomSchedule?.academic_period_id?.toString() ?? currentAcademicPeriodId?.toString() ?? "",
     branch_id: roomSchedule?.branch_id?.toString() ?? "",
     department_id: roomSchedule?.department_id?.toString() ?? "",
@@ -32,6 +32,7 @@ const getInitialValues = (currentAcademicPeriodId, roomSchedule = null) => ({
     start_time: roomSchedule?.start_time ?? "",
     end_time: roomSchedule?.end_time ?? "",
     notes: roomSchedule?.notes ?? "",
+    return_context: returnContext,
 });
 
 const getEmptyAvailabilityMeta = () => ({
@@ -103,6 +104,8 @@ export default function CreateAndEditRoomSchedule({
     currentAcademicPeriodId,
     dayOptions,
     roomSchedule = null,
+    backHref = null,
+    returnContext = "",
 }) {
     const isEditing = Boolean(roomSchedule?.id);
     const {
@@ -114,7 +117,7 @@ export default function CreateAndEditRoomSchedule({
         errors,
         clearErrors,
         setError,
-    } = useForm(getInitialValues(currentAcademicPeriodId, roomSchedule));
+    } = useForm(getInitialValues(currentAcademicPeriodId, roomSchedule, returnContext));
     const [currentStep, setCurrentStep] = useState(0);
     const [availableRooms, setAvailableRooms] = useState([]);
     const [availabilityMeta, setAvailabilityMeta] = useState(getEmptyAvailabilityMeta());
@@ -510,11 +513,11 @@ export default function CreateAndEditRoomSchedule({
                     </div>
 
                     <Link
-                        href={route("admin.core.room-schedules.index")}
+                        href={backHref ?? route("admin.core.room-schedules.index")}
                         className="btn btn-label-secondary"
                     >
                         <i className="bx bx-arrow-back me-1"></i>
-                        <span>Back to Room Schedule</span>
+                        <span>Back</span>
                     </Link>
                 </div>
 

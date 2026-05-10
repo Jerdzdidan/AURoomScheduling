@@ -1,8 +1,10 @@
 import { Head, usePage } from "@inertiajs/react";
+import { useMemo } from "react";
 import Base from "@/Layouts/Base";
 import CreateAndEditRoomSchedule from "../Forms/CreateAndEditRoomSchedule";
 
 export default function RoomScheduleEdit() {
+    const page = usePage();
     const {
         academicPeriods = [],
         branches = [],
@@ -13,13 +15,30 @@ export default function RoomScheduleEdit() {
         currentAcademicPeriodId = null,
         dayOptions = [],
         roomSchedule = null,
-    } = usePage().props;
+    } = page.props;
+
+    const returnContext = useMemo(() => {
+        const query = new URLSearchParams(page.url.split("?")[1] ?? "");
+        return query.get("return_context") || "";
+    }, [page.url]);
+
+    const backHref = useMemo(() => {
+        if (returnContext === "room-utilization-grid") {
+            return route("admin.reports.room-utilization.grid");
+        }
+
+        return route("admin.core.room-schedules.index");
+    }, [returnContext]);
+
+    const pageTitle = returnContext === "room-utilization-grid"
+        ? "Reports > Room Utilization > Edit"
+        : "Core > Room Schedule > Edit";
 
     return (
         <>
-            <Head title="Core > Room Schedule > Edit" />
+            <Head title={pageTitle} />
 
-            <Base title="Core > Room Schedule > Edit">
+            <Base title={pageTitle}>
                 <CreateAndEditRoomSchedule
                     academicPeriods={academicPeriods}
                     branches={branches}
@@ -30,6 +49,8 @@ export default function RoomScheduleEdit() {
                     currentAcademicPeriodId={currentAcademicPeriodId}
                     dayOptions={dayOptions}
                     roomSchedule={roomSchedule}
+                    backHref={backHref}
+                    returnContext={returnContext}
                 />
             </Base>
         </>

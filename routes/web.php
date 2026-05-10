@@ -82,8 +82,10 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::get('edit/{id}', [RoomScheduleController::class, 'edit'])->name('edit');
             Route::get('data', [RoomScheduleController::class, 'getData'])->name('data');
             Route::get('stats', [RoomScheduleController::class, 'getStats'])->name('stats');
+            Route::get('grid-data', [RoomScheduleController::class, 'getSchedules'])->name('grid-data');
             Route::get('available-rooms', [RoomScheduleController::class, 'getAvailableRooms'])->name('available-rooms');
             Route::post('store', [RoomScheduleController::class, 'store'])->name('store');
+            Route::post('ajax-store', [RoomScheduleController::class, 'ajaxStore'])->name('ajax-store');
             Route::put('{id}', [RoomScheduleController::class, 'update'])->name('update');
             Route::delete('delete/{id}', [RoomScheduleController::class, 'destroy'])->name('delete');
         });
@@ -105,6 +107,9 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
         Route::prefix('room-utilization')->name('room-utilization.')->group(function () {
             Route::get('/', [RoomUtilizationController::class, 'index'])->name('index');
             Route::get('search', [RoomUtilizationController::class, 'search'])->name('search');
+            Route::post('grid/open', [RoomUtilizationController::class, 'openGrid'])->name('grid.open');
+            Route::post('grid/return', [RoomUtilizationController::class, 'returnFromGrid'])->name('grid.return');
+            Route::get('grid', [RoomUtilizationController::class, 'grid'])->name('grid');
         });
     });
 

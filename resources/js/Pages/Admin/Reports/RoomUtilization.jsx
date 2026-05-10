@@ -1,10 +1,10 @@
-import { Head, usePage } from "@inertiajs/react";
-import { useMemo, useRef, useState } from "react";
+import { Head, router, usePage } from "@inertiajs/react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Base from "@/Layouts/Base";
 import SelectField from "@/Components/Input/SelectField";
 import TimeSelectField from "@/Components/Input/TimeSelectField";
 import StatsCard from "@/Components/Card/StatsCard";
-import { LuBuilding2, LuCalendarCheck, LuDoorOpen, LuSearch, LuX } from "react-icons/lu";
+import { LuBuilding2, LuCalendarCheck, LuDoorOpen, LuSearch, LuX, LuExternalLink } from "react-icons/lu";
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -32,9 +32,22 @@ const shortCode = (code) => {
 
 
 
-function RoomCard({ room, status }) {
+function RoomCard({ room, status, onRoomClick }) {
     const isAvailable = status === "available";
     const [open, setOpen] = useState(false);
+
+    const handleCardClick = () => {
+        if (room.schedules?.length) {
+            setOpen((p) => !p);
+        }
+    };
+
+    const handleGridClick = (e) => {
+        e.stopPropagation();
+        if (onRoomClick) {
+            onRoomClick(room);
+        }
+    };
 
     return (
         <div
@@ -52,7 +65,7 @@ function RoomCard({ room, status }) {
                 e.currentTarget.style.transform = "";
                 e.currentTarget.style.boxShadow = "";
             }}
-            onClick={() => room.schedules?.length && setOpen((p) => !p)}
+            onClick={handleCardClick}
         >
             <div className="card-body py-3 px-3">
                 <div className="d-flex justify-content-between align-items-start gap-2">
@@ -76,6 +89,21 @@ function RoomCard({ room, status }) {
                         <span className="badge bg-label-secondary" style={{ fontSize: "0.62rem" }}>{room.type}</span>
                     </div>
                 </div>
+
+                {/* Click hint */}
+                {onRoomClick && (
+                    <div className="mt-2 pt-1 border-top">
+                        <button
+                            type="button"
+                            className="btn btn-link text-primary p-0 d-flex align-items-center gap-1 text-decoration-none"
+                            style={{ fontSize: "0.72rem" }}
+                            onClick={handleGridClick}
+                        >
+                            <LuExternalLink size={11} />
+                            View full schedule
+                        </button>
+                    </div>
+                )}
 
                 {/* Busy: show schedule(s) */}
                 {!isAvailable && room.schedules?.length > 0 && open && (
@@ -111,7 +139,7 @@ function RoomCard({ room, status }) {
     );
 }
 
-function BuildingGroup({ buildingCode, buildingName, rooms, status }) {
+function BuildingGroup({ buildingCode, buildingName, rooms, status, onRoomClick }) {
     return (
         <div className="mb-4">
             <div className="d-flex align-items-center gap-2 mb-2">
@@ -124,7 +152,7 @@ function BuildingGroup({ buildingCode, buildingName, rooms, status }) {
             <div className="row g-2">
                 {rooms.map((room) => (
                     <div key={room.id} className="col-sm-6 col-lg-4 col-xl-3">
-                        <RoomCard room={room} status={status} />
+                        <RoomCard room={room} status={status} onRoomClick={onRoomClick} />
                     </div>
                 ))}
             </div>
@@ -132,7 +160,7 @@ function BuildingGroup({ buildingCode, buildingName, rooms, status }) {
     );
 }
 
-function RoomSection({ title, rooms, status, emptyText }) {
+function RoomSection({ title, rooms, status, emptyText, onRoomClick }) {
     const [collapsed, setCollapsed] = useState(false);
     const grouped = useMemo(() => {
         const map = new Map();
@@ -192,6 +220,7 @@ function RoomSection({ title, rooms, status, emptyText }) {
                             buildingName={group.building_name}
                             rooms={group.rooms}
                             status={status}
+                            onRoomClick={onRoomClick}
                         />
                     ))
                 )}
@@ -213,18 +242,25 @@ const getInitialFilters = () => ({
 });
 
 export default function RoomUtilization() {
+    const page = usePage();
     const {
         academicPeriods = [],
         branches = [],
         buildings = [],
         dayOptions = [],
         currentAcademicPeriodId = null,
-    } = usePage().props;
+        initialFilters = {},
+    } = page.props;
 
-    const [filters, setFilters] = useState({
+    const [filters, setFilters] = useState(() => ({
         ...getInitialFilters(),
-        academic_period_id: currentAcademicPeriodId?.toString() ?? "",
-    });
+        academic_period_id: initialFilters.academic_period_id || currentAcademicPeriodId?.toString() || "",
+        branch_id: initialFilters.branch_id || "",
+        building_id: initialFilters.building_id || "",
+        day_of_week: initialFilters.day_of_week || "",
+        start_time: initialFilters.start_time || "",
+        end_time: initialFilters.end_time || "",
+    }));
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
@@ -247,7 +283,7 @@ export default function RoomUtilization() {
         [academicPeriods]
     );
 
-    const validate = () => {
+    const validate = useCallback(() => {
         const errs = {};
         if (!filters.academic_period_id) errs.academic_period_id = "Select an academic period.";
         if (!filters.branch_id) errs.branch_id = "Select a branch.";
@@ -259,11 +295,10 @@ export default function RoomUtilization() {
         }
         setErrors(errs);
         return Object.keys(errs).length === 0;
-    };
+    }, [filters]);
 
-    const handleSearch = () => {
+    const handleSearch = useCallback(() => {
         if (!validate()) {
-            // toastr.error("Please fill in all required fields.");
             return;
         }
 
@@ -287,7 +322,16 @@ export default function RoomUtilization() {
                 setSearched(false);
             })
             .always(() => setLoading(false));
-    };
+    }, [filters, validate]);
+
+    const autoSearchDone = useRef(false);
+
+    useEffect(() => {
+        if (!autoSearchDone.current && filters.academic_period_id && filters.branch_id && filters.day_of_week && filters.start_time && filters.end_time) {
+            autoSearchDone.current = true;
+            handleSearch();
+        }
+    }, [filters, handleSearch]);
 
     const handleReset = () => {
         setFilters({ ...getInitialFilters(), academic_period_id: currentAcademicPeriodId?.toString() ?? "" });
@@ -299,6 +343,22 @@ export default function RoomUtilization() {
     const utilizationPct = result
         ? result.total_rooms === 0 ? 0 : Math.round((result.busy_count / result.total_rooms) * 100)
         : 0;
+
+    const handleRoomClick = (room) => {
+        router.post(route("admin.reports.room-utilization.grid.open"), {
+            room_id: room.id,
+            academic_period_id: filters.academic_period_id,
+            branch_id: filters.branch_id,
+            building_id: filters.building_id || null,
+            day_of_week: filters.day_of_week,
+            start_time: filters.start_time,
+            end_time: filters.end_time,
+        }, {
+            onError: () => {
+                toastr.error("Unable to open the room grid. Please refresh and try again.");
+            },
+        });
+    };
 
     return (
         <>
@@ -464,8 +524,7 @@ export default function RoomUtilization() {
                 {result && (
                     <>
                         {/* Summary bar */}
-                        <div className="card border-0 shadow-sm mb-4"
-                            style={{ background: "linear-gradient(135deg, #f8f9ff 0%, #fff 100%)" }}>
+                        <div className="card border-0 shadow-sm mb-4">
                             <div className="card-header py-3 px-4 d-flex align-items-center justify-content-between border-bottom">
                                 <h6 className="mb-0 fw-bold text-primary">Summary</h6>
                                 <button
@@ -551,6 +610,7 @@ export default function RoomUtilization() {
                             rooms={result.available}
                             status="available"
                             emptyText="No available rooms for the selected time window."
+                            onRoomClick={handleRoomClick}
                         />
 
                         {/* Occupied Rooms */}
@@ -559,6 +619,7 @@ export default function RoomUtilization() {
                             rooms={result.busy}
                             status="busy"
                             emptyText="No occupied rooms for the selected time window."
+                            onRoomClick={handleRoomClick}
                         />
                     </>
                 )}

@@ -436,6 +436,35 @@
     font-size: 0.7rem;
 }
 
+.officer-schedule-block.compact-admin .officer-schedule-block-content {
+    padding: 0.22rem 0.4rem;
+    gap: 0.04rem;
+    justify-content: flex-start;
+}
+
+.officer-schedule-block.compact-admin .block-dept {
+    font-size: 0.68rem;
+    line-height: 1.1;
+}
+
+.officer-schedule-block.compact-admin .block-time {
+    font-size: 0.62rem;
+    line-height: 1.05;
+    opacity: 0.58;
+    margin-top: auto;
+    align-self: flex-start;
+}
+
+.officer-schedule-block.ultra-compact-admin .officer-schedule-block-content {
+    padding: 0.18rem 0.38rem;
+    justify-content: center;
+}
+
+.officer-schedule-block.ultra-compact-admin .block-dept {
+    font-size: 0.66rem;
+    line-height: 1.05;
+}
+
 /* ── Schedule Tooltip ────────────────────────────────────────── */
 
 .officer-schedule-tooltip {
@@ -448,8 +477,8 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     font-size: 0.8rem;
     color: #22303e;
-    min-width: 220px;
-    max-width: 300px;
+    min-width: 280px;
+    max-width: 380px;
     pointer-events: auto;
     cursor: default;
     animation: tooltipFadeIn 0.15s ease;
@@ -493,7 +522,7 @@
 .officer-schedule-tooltip .tooltip-row {
     display: flex;
     align-items: baseline;
-    gap: 0.4rem;
+    gap: 0.8rem;
     padding: 0.15rem 0;
     font-size: 0.78rem;
 }
@@ -502,7 +531,7 @@
     font-weight: 600;
     color: #5a6a7e;
     white-space: nowrap;
-    min-width: 60px;
+    min-width: 75px;
 }
 
 .officer-schedule-tooltip .tooltip-value {
@@ -835,24 +864,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     color: #1855a9;
     font-weight: 600;
     pointer-events: none;
     z-index: 2;
-    animation: ghostPulse 1.5s ease-in-out infinite;
 }
 
-.officer-ghost-block span:last-child {
-    font-size: 0.62rem;
-    font-weight: 500;
-    opacity: 0.7;
-}
 
-@keyframes ghostPulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
-}
 
 /* ── Day Recurrence Selector ────────────────────────────────── */
 
@@ -909,4 +928,3 @@
     border-color: #1855a9;
     opacity: 0.85;
 }
-

@@ -1,11 +1,14 @@
 import { Head, router, usePage } from "@inertiajs/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
+import SelectField from "@/Components/Input/SelectField";
+import ScheduleCalendarGrid from "@/Components/Schedule/ScheduleCalendarGrid";
 import FilterRoomScheduleOffcanvas from "./Forms/FilterRoomScheduleOffcanvas";
-import { LuCalendarRange, LuDoorOpen, LuSchool } from "react-icons/lu";
+import AdminInlineSchedulePopover from "./Forms/AdminInlineSchedulePopover";
+import { LuCalendarRange, LuDoorOpen, LuSchool, LuArrowLeft, LuLayoutGrid, LuLayoutList } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 const formatTime = (value) => {
@@ -40,15 +43,53 @@ const formatAcademicPeriod = (row) => {
 
 const isCurrentPeriod = (value) => Number(value) === 1 || value === true;
 
+// Strip branch code prefix
+const shortCode = (code) => {
+    if (!code) return "";
+    const idx = code.indexOf("-");
+    return idx !== -1 ? code.substring(idx + 1) : code;
+};
+
+const formatPeriod = (period) => {
+    if (!period) return "Select a period";
+    if (period.academic_year && period.semester) {
+        return `A.Y. ${period.academic_year} – ${semesterLabels[period.semester] ?? period.semester}`;
+    }
+    return period.name || "Unknown";
+};
+
 export default function RoomSchedule() {
+    const page = usePage();
     const {
         academicPeriods = [],
         branches = [],
         departments = [],
         subjects = [],
         rooms = [],
+        professors = [],
         dayOptions = [],
-    } = usePage().props;
+        currentAcademicPeriodId = null,
+    } = page.props;
+
+    // Parse URL query params for deep-link support
+    const getSavedState = (key, defaultVal) => {
+        try {
+            const saved = sessionStorage.getItem(`roomScheduleState_${key}`);
+            return saved !== null ? saved : defaultVal;
+        } catch {
+            return defaultVal;
+        }
+    };
+
+    const initialView = getSavedState("viewMode", "table");
+    const initialRoomId = getSavedState("gridRoomId", "");
+    const initialPeriodId = getSavedState("gridPeriodId", currentAcademicPeriodId ? String(currentAcademicPeriodId) : "");
+    const initialGridBranchId = getSavedState("gridBranchId", "");
+
+    // View mode
+    const [viewMode, setViewMode] = useState(initialView);
+
+    // ── Table view state ──────────────────────────────────
     const tableRef = useRef(null);
     const filtersRef = useRef({
         academic_period_id: "",
@@ -72,6 +113,53 @@ export default function RoomSchedule() {
         [dayOptions],
     );
 
+    // ── Grid view state ───────────────────────────────────
+    const [gridBranchId, setGridBranchId] = useState(initialGridBranchId);
+    const [gridRoomId, setGridRoomId] = useState(initialRoomId);
+    const [gridPeriodId, setGridPeriodId] = useState(initialPeriodId);
+    const [gridSchedules, setGridSchedules] = useState([]);
+    const [gridLoading, setGridLoading] = useState(false);
+    const [popoverData, setPopoverData] = useState(null);
+    const [statsCollapsed, setStatsCollapsed] = useState(false);
+    const calendarRef = useRef(null);
+
+    useEffect(() => {
+        try {
+            sessionStorage.setItem("roomScheduleState_viewMode", viewMode);
+            sessionStorage.setItem("roomScheduleState_gridBranchId", gridBranchId);
+            sessionStorage.setItem("roomScheduleState_gridRoomId", gridRoomId);
+            sessionStorage.setItem("roomScheduleState_gridPeriodId", gridPeriodId);
+        } catch (e) {
+            // ignore
+        }
+    }, [viewMode, gridBranchId, gridRoomId, gridPeriodId]);
+
+    const gridRoom = useMemo(
+        () => rooms.find((r) => String(r.id) === String(gridRoomId)),
+        [rooms, gridRoomId],
+    );
+
+    const gridFilteredRooms = useMemo(() => {
+        if (!gridBranchId) return [];
+        return rooms.filter((r) => String(r.branch_id) === String(gridBranchId));
+    }, [rooms, gridBranchId]);
+
+    const sortedAcademicPeriods = useMemo(() => {
+        const semesterOrder = { "SUMMER": 3, "2ND": 2, "1ST": 1 };
+
+        const sorted = [...academicPeriods].sort((a, b) => {
+            const yearCmp = (b.academic_year || "").localeCompare(a.academic_year || "");
+            if (yearCmp !== 0) return yearCmp;
+            return (semesterOrder[b.semester] || 0) - (semesterOrder[a.semester] || 0);
+        });
+
+        const current = sorted.filter((p) => p.is_current);
+        const rest = sorted.filter((p) => !p.is_current);
+
+        return [...current, ...rest];
+    }, [academicPeriods]);
+
+    // ── Table logic ───────────────────────────────────────
     const loadStats = () => {
         $.get(route("admin.core.room-schedules.stats")).done((stats) => {
             $("#total").text(stats.total);
@@ -82,6 +170,10 @@ export default function RoomSchedule() {
 
     useEffect(() => {
         loadStats();
+    }, []);
+
+    useEffect(() => {
+        if (viewMode !== "table") return;
 
         const heading = document.createElement("h5");
         heading.classList.add("card-title", "mb-0", "text-md-start", "text-center", "pb-md-0", "pb-6");
@@ -295,7 +387,7 @@ export default function RoomSchedule() {
             table.destroy();
             delete window.roomScheduleCRUD;
         };
-    }, [dayLabels]);
+    }, [dayLabels, viewMode]);
 
     const applyFilters = (overrideFilters) => {
         filtersRef.current = { ...(overrideFilters ?? filters) };
@@ -304,53 +396,301 @@ export default function RoomSchedule() {
         }
     };
 
+    // ── Grid logic ────────────────────────────────────────
+    const loadGridSchedules = useCallback(() => {
+        if (!gridRoomId || !gridPeriodId) {
+            setGridSchedules([]);
+            return;
+        }
+
+        setGridLoading(true);
+
+        $.get(route("admin.core.room-schedules.grid-data"), {
+            room_id: gridRoomId,
+            academic_period_id: gridPeriodId,
+        })
+            .done((response) => {
+                setGridSchedules(response.schedules ?? []);
+            })
+            .fail(() => {
+                toastr.error("Failed to load schedules.");
+                setGridSchedules([]);
+            })
+            .always(() => {
+                setGridLoading(false);
+            });
+    }, [gridRoomId, gridPeriodId]);
+
+    useEffect(() => {
+        if (viewMode === "grid") {
+            loadGridSchedules();
+        }
+    }, [loadGridSchedules, viewMode]);
+
+    const handleGridEdit = (id) => {
+        router.get(route("admin.core.room-schedules.edit", id));
+    };
+
+    const handleGridDelete = (id, subjectCode, section) => {
+        Swal.fire({
+            title: "Delete Room Schedule",
+            text: `Are you sure you want to delete the ${subjectCode} / ${section} schedule?`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, delete",
+            cancelButtonText: "Cancel",
+            customClass: {
+                confirmButton: "btn btn-danger me-3",
+                cancelButton: "btn btn-label-secondary",
+            },
+            buttonsStyling: false,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: route("admin.core.room-schedules.delete", id),
+                    type: "DELETE",
+                })
+                    .done((res) => {
+                        toastr.success(res.message || "Room schedule deleted successfully.");
+                        loadGridSchedules();
+                    })
+                    .fail((xhr) => {
+                        const message = xhr.responseJSON?.message || "Failed to delete room schedule.";
+                        toastr.error(message);
+                    });
+            }
+        });
+    };
+
+    const handleEmptyClick = ({ day, startTime, endTime, anchorRect }) => {
+        if (!gridRoom || !gridPeriodId) return;
+
+        if (!currentAcademicPeriodId) {
+            toastr.warning("No current academic period is set.");
+            return;
+        }
+
+        if (String(gridPeriodId) !== String(currentAcademicPeriodId)) {
+            toastr.warning("You can only create new schedules in the current academic period.");
+            return;
+        }
+
+        setPopoverData({ day, startTime, endTime, anchorRect });
+    };
+
+    const handlePopoverClose = () => {
+        setPopoverData(null);
+    };
+
+    const handlePopoverSaved = () => {
+        setPopoverData(null);
+        loadGridSchedules();
+    };
+
     return (
         <>
             <Head title="Core > Room Schedule" />
 
             <Base title="Core > Room Schedule">
-                <div className="row mb-4">
-                    <StatsCard
-                        id="total"
-                        title="Total Schedules"
-                        Icon={LuCalendarRange}
-                        iconSize="28"
-                        bgColor="bg-primary"
-                        className="col-xl-4 col-md-6"
-                    />
-
-                    <StatsCard
-                        id="current-period"
-                        title="Current Period Entries"
-                        Icon={LuSchool}
-                        iconSize="28"
-                        bgColor="bg-success"
-                        className="col-xl-4 col-md-6"
-                    />
-
-                    <StatsCard
-                        id="rooms-in-use"
-                        title="Rooms In Use"
-                        Icon={LuDoorOpen}
-                        iconSize="28"
-                        bgColor="bg-info"
-                        className="col-xl-4 col-md-6"
-                    />
-                </div>
-
-                <div className="card">
-                    <div className="card-datatable text-nowrap">
-                        <ScrollableTable id="room-schedule-table">
-                            <th>Id</th>
-                            <th>Academic Period</th>
-                            <th>Subject / Section</th>
-                            <th>Room</th>
-                            <th>Schedule</th>
-                            <th>Professor</th>
-                            <th>Actions</th>
-                        </ScrollableTable>
+                {/* View Mode Toggle */}
+                <div className="d-flex align-items-center gap-2 mb-3 justify-content-end">
+                    <div className="btn-group" role="group">
+                        <button
+                            type="button"
+                            className={`btn btn-sm ${viewMode === "table" ? "btn-primary" : "btn-outline-primary"} d-flex align-items-center gap-1`}
+                            onClick={() => setViewMode("table")}
+                        >
+                            <LuLayoutList size={15} />
+                            Table
+                        </button>
+                        <button
+                            type="button"
+                            className={`btn btn-sm ${viewMode === "grid" ? "btn-primary" : "btn-outline-primary"} d-flex align-items-center gap-1`}
+                            onClick={() => setViewMode("grid")}
+                        >
+                            <LuLayoutGrid size={15} />
+                            Grid
+                        </button>
                     </div>
                 </div>
+
+                {/* Summary bar */}
+                <div className="card border-0 shadow-sm mb-4">
+                    <div className="card-header py-3 px-4 d-flex align-items-center justify-content-between border-bottom">
+                        <h6 className="mb-0 fw-bold text-primary">Summary</h6>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-icon btn-text-secondary rounded-circle ms-auto"
+                            onClick={() => setStatsCollapsed(!statsCollapsed)}
+                        >
+                            <i className={`bx ${statsCollapsed ? "bx-chevron-down" : "bx-chevron-up"}`} style={{ fontSize: "1.25rem" }} />
+                        </button>
+                    </div>
+                    <div className={`collapse ${statsCollapsed ? "" : "show"}`}>
+                        <div className="card-body px-4 pt-5 pb-4">
+                            {/* Stats Cards */}
+                            <div className="row g-3">
+                                <StatsCard
+                                    id="total"
+                                    title="Total Schedules"
+                                    Icon={LuCalendarRange}
+                                    iconSize="28"
+                                    bgColor="bg-primary"
+                                    className="col-xl-4 col-md-6"
+                                />
+
+                                <StatsCard
+                                    id="current-period"
+                                    title="Current Period Entries"
+                                    Icon={LuSchool}
+                                    iconSize="28"
+                                    bgColor="bg-success"
+                                    className="col-xl-4 col-md-6"
+                                />
+
+                                <StatsCard
+                                    id="rooms-in-use"
+                                    title="Rooms In Use"
+                                    Icon={LuDoorOpen}
+                                    iconSize="28"
+                                    bgColor="bg-info"
+                                    className="col-xl-4 col-md-6"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Table View ─────────────────────────────── */}
+                <div style={{ display: viewMode === "table" ? "block" : "none" }}>
+                    <div className="card">
+                        <div className="card-datatable text-nowrap">
+                            <ScrollableTable id="room-schedule-table">
+                                <th>Id</th>
+                                <th>Academic Period</th>
+                                <th>Subject / Section</th>
+                                <th>Room</th>
+                                <th>Schedule</th>
+                                <th>Professor</th>
+                                <th>Actions</th>
+                            </ScrollableTable>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Grid View ──────────────────────────────── */}
+                {viewMode === "grid" && (
+                    <div className="officer-calendar-wrapper">
+                        {/* Grid Header */}
+                        <div className="card mb-4">
+                            <div className="card-body py-3">
+                                <div className="d-flex flex-wrap align-items-center gap-3">
+                                    {/* Branch selector */}
+                                    <div style={{ minWidth: "220px", flex: "1 1 220px" }}>
+                                        <SelectField
+                                            id="grid-branch-select"
+                                            name="branch_id"
+                                            placeholder="Select a branch"
+                                            value={gridBranchId}
+                                            onChange={(value) => {
+                                                setGridBranchId(value);
+                                                setGridRoomId("");
+                                                setPopoverData(null);
+                                            }}
+                                            options={branches}
+                                            renderOption={(b) => `${b.code} – ${b.name}`}
+                                            wrapperClassName="mb-0"
+                                        />
+                                    </div>
+
+                                    {/* Room selector */}
+                                    <div style={{ minWidth: "220px", flex: "1 1 220px" }}>
+                                        <SelectField
+                                            id="grid-room-select"
+                                            name="room_id"
+                                            placeholder={gridBranchId ? "Select a room" : "Select a branch first"}
+                                            value={gridRoomId}
+                                            onChange={(value) => {
+                                                setGridRoomId(value);
+                                                setPopoverData(null);
+                                            }}
+                                            options={gridFilteredRooms}
+                                            renderOption={(r) =>
+                                                `${shortCode(r.code)} – ${r.building_name} (${r.type})`
+                                            }
+                                            disabled={!gridBranchId}
+                                            wrapperClassName="mb-0"
+                                        />
+                                    </div>
+
+                                    {/* Period selector */}
+                                    <div style={{ minWidth: "220px", flex: "1 1 220px" }}>
+                                        <SelectField
+                                            id="grid-period-select"
+                                            name="academic_period_id"
+                                            placeholder="Select academic period"
+                                            value={gridPeriodId}
+                                            onChange={(value) => {
+                                                setGridPeriodId(value);
+                                                setPopoverData(null);
+                                            }}
+                                            options={sortedAcademicPeriods}
+                                            renderOption={(period) =>
+                                                `${formatPeriod(period)}${period.is_current ? " (Current)" : ""}`
+                                            }
+                                            wrapperClassName="mb-0"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Calendar Grid */}
+                        {gridRoom && gridPeriodId ? (
+                            <ScheduleCalendarGrid
+                                schedules={gridSchedules}
+                                loading={gridLoading}
+                                onEdit={handleGridEdit}
+                                onDelete={handleGridDelete}
+                                onEmptyClick={handleEmptyClick}
+                                ghostBlock={popoverData}
+                                isAdmin={true}
+                                calendarRef={calendarRef}
+                            />
+                        ) : (
+                            <div className="officer-calendar-empty">
+                                <LuCalendarRange className="empty-icon" />
+                                <div className="empty-title">
+                                    {!gridRoom ? "Select a Room" : "Select an Academic Period"}
+                                </div>
+                                <div className="empty-text">
+                                    {!gridRoom
+                                        ? "Choose a room from the dropdown above to view its weekly schedule."
+                                        : "Select an academic period from the dropdown above to view schedules."}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Admin inline popover */}
+                        {popoverData && gridRoom && (
+                            <AdminInlineSchedulePopover
+                                day={popoverData.day}
+                                startTime={popoverData.startTime}
+                                endTime={popoverData.endTime}
+                                room={gridRoom}
+                                branches={branches}
+                                departments={departments}
+                                subjects={subjects}
+                                professors={professors}
+                                currentAcademicPeriodId={currentAcademicPeriodId}
+                                anchorRect={popoverData.anchorRect}
+                                calendarRect={calendarRef.current?.getBoundingClientRect()}
+                                onClose={handlePopoverClose}
+                                onSaved={handlePopoverSaved}
+                            />
+                        )}
+                    </div>
+                )}
 
                 <FilterRoomScheduleOffcanvas
                     filters={filters}
