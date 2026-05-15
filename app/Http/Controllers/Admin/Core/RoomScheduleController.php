@@ -71,6 +71,7 @@ class RoomScheduleController extends Controller
                 'room_schedules.start_time',
                 'room_schedules.end_time',
                 'room_schedules.notes',
+                'room_schedules.is_transferred',
                 'room_schedules.academic_period_id',
                 'room_schedules.subject_id',
                 'room_schedules.room_id',
@@ -84,6 +85,7 @@ class RoomScheduleController extends Controller
                 'departments.code as department_code',
                 'branches.name as branch_name',
                 'branches.code as branch_code',
+                'branches.id as branch_id',
                 'rooms.code as room_code',
                 'rooms.type as room_type',
                 'buildings.name as building_name',
@@ -168,6 +170,7 @@ class RoomScheduleController extends Controller
         $schedules = RoomSchedule::query()
             ->join('subjects', 'room_schedules.subject_id', '=', 'subjects.id')
             ->join('departments', 'subjects.department_id', '=', 'departments.id')
+            ->join('rooms', 'room_schedules.room_id', '=', 'rooms.id')
             ->leftJoin('professors', 'room_schedules.professor_id', '=', 'professors.id')
             ->leftJoin('users as creators', 'room_schedules.created_by_user_id', '=', 'creators.id')
             ->where('room_schedules.room_id', $validated['room_id'])
@@ -179,6 +182,11 @@ class RoomScheduleController extends Controller
                 'room_schedules.end_time',
                 'room_schedules.section',
                 'room_schedules.notes',
+                'room_schedules.is_transferred',
+                'room_schedules.academic_period_id',
+                'room_schedules.room_id',
+                'rooms.code as room_code',
+                'departments.branch_id',
                 'subjects.name as subject_name',
                 'subjects.code as subject_code',
                 'subjects.class_type as subject_class_type',
@@ -209,7 +217,12 @@ class RoomScheduleController extends Controller
                     'professor_name' => $schedule->professor_name,
                     'department_name' => $schedule->department_name,
                     'department_code' => $schedule->department_code,
+                    'academic_period_id' => $schedule->academic_period_id,
+                    'room_id' => $schedule->room_id,
+                    'room_code' => $schedule->room_code,
+                    'branch_id' => $schedule->branch_id,
                     'notes' => $schedule->notes,
+                    'is_transferred' => (bool) $schedule->is_transferred,
                     'is_own' => true,
                     'can_delete' => true,
                     'created_by_label' => $creatorLabel,
@@ -248,6 +261,7 @@ class RoomScheduleController extends Controller
         $conflictingRoomIds = RoomSchedule::query()
             ->where('academic_period_id', $validated['academic_period_id'])
             ->where('day_of_week', $validated['day_of_week'])
+            ->where('is_transferred', false)
             ->when($ignoreSchedule, fn($query) => $query->whereKeyNot($ignoreSchedule->id))
             ->where('start_time', '<', $validated['end_time'])
             ->where('end_time', '>', $validated['start_time'])
@@ -449,6 +463,64 @@ class RoomScheduleController extends Controller
         }
     }
 
+    public function transfer(Request $request, $id)
+    {
+        try {
+            $roomSchedule = $this->findScheduleOrFail($id);
+
+            $request->merge([
+                'remarks' => trim((string) $request->input('remarks')),
+            ]);
+
+            $validated = $request->validate([
+                'new_room_id' => ['required', 'integer', 'exists:rooms,id', 'different:current_room_id'],
+                'remarks' => ['required', 'string', 'max:1000'],
+            ]);
+
+            $conflict = RoomSchedule::query()
+                ->where('academic_period_id', $roomSchedule->academic_period_id)
+                ->where('room_id', $validated['new_room_id'])
+                ->where('day_of_week', $roomSchedule->day_of_week)
+                ->where('is_transferred', false)
+                ->whereKeyNot($roomSchedule->id)
+                ->where('start_time', '<', $roomSchedule->end_time)
+                ->where('end_time', '>', $roomSchedule->start_time)
+                ->first();
+
+            if ($conflict) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The selected room is already taken during this time slot.',
+                ], 422);
+            }
+
+            $previousRoomId = $roomSchedule->room_id;
+
+            $roomSchedule->update([
+                'is_transferred' => true,
+            ]);
+
+            $newSchedule = $roomSchedule->replicate();
+            $newSchedule->room_id = $validated['new_room_id'];
+            $newSchedule->is_transferred = false;
+            $newSchedule->save();
+
+            $roomSchedule->reassignments()->create([
+                'previous_room_id' => $previousRoomId,
+                'new_room_id' => $validated['new_room_id'],
+                'remarks' => $validated['remarks'],
+                'created_by_user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Schedule transferred successfully.',
+            ]);
+        } catch (DecryptException) {
+            return response()->json(['message' => 'Invalid room schedule ID.'], 400);
+        }
+    }
+
     private function validateSchedule(Request $request, ?RoomSchedule $roomSchedule = null): array
     {
         $request->merge([
@@ -518,6 +590,7 @@ class RoomScheduleController extends Controller
             ->where('academic_period_id', $validated['academic_period_id'])
             ->where('room_id', $validated['room_id'])
             ->where('day_of_week', $validated['day_of_week'])
+            ->where('is_transferred', false)
             ->when($roomSchedule, fn($query) => $query->whereKeyNot($roomSchedule->id))
             ->where('start_time', '<', $validated['end_time'])
             ->where('end_time', '>', $validated['start_time'])
@@ -708,6 +781,7 @@ class RoomScheduleController extends Controller
             'start_time' => substr((string) $roomSchedule->start_time, 0, 5),
             'end_time' => substr((string) $roomSchedule->end_time, 0, 5),
             'notes' => $roomSchedule->notes ?? '',
+            'is_transferred' => (bool) $roomSchedule->is_transferred,
         ];
     }
 

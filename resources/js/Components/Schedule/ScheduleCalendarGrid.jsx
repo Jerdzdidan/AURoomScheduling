@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LuTrash2, LuCalendarRange } from "react-icons/lu";
+import { LuTrash2, LuCalendarRange, LuArrowRightLeft } from "react-icons/lu";
 import { BiSolidEdit } from "react-icons/bi";
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
@@ -103,7 +103,7 @@ function HourLines() {
  *
  * @param {boolean} isAdmin - When true, all blocks show full details and use any supplied actions.
  */
-function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
+function ScheduleBlock({ schedule, onEdit, onDelete, onTransfer, isAdmin }) {
     const [showTooltip, setShowTooltip] = useState(false);
     const blockRef = useRef(null);
     const tooltipRef = useRef(null);
@@ -112,7 +112,8 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
     const canViewDetails = isAdmin || schedule.is_own;
     const canEdit = canViewDetails && typeof onEdit === "function" && Boolean(schedule.id);
     const canDelete = typeof onDelete === "function" && (isAdmin || schedule.can_delete);
-    const hasActions = canEdit || canDelete;
+    const canTransfer = typeof onTransfer === "function" && isAdmin && Boolean(schedule.id);
+    const hasActions = canEdit || canDelete || canTransfer;
 
     const handleMouseEnter = () => {
         if (!canViewDetails) return;
@@ -180,7 +181,7 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
     return (
         <div
             ref={blockRef}
-            className={`officer-schedule-block ${showFull ? "own" : "other"}${isCompactAdminBlock ? " compact-admin" : ""}${isUltraCompactAdminBlock ? " ultra-compact-admin" : ""}`}
+            className={`officer-schedule-block ${showFull ? "own" : "other"}${isCompactAdminBlock ? " compact-admin" : ""}${isUltraCompactAdminBlock ? " ultra-compact-admin" : ""}${schedule.is_transferred ? " transferred" : ""}`}
             style={getBlockStyle(schedule.start_time, schedule.end_time)}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -288,6 +289,19 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
 
                     {hasActions && (
                         <div className="tooltip-actions">
+                            {canTransfer && (
+                                <button
+                                    className="btn btn-sm btn-outline-info"
+                                    title="To Transfer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onTransfer(schedule);
+                                    }}
+                                >
+                                    <LuArrowRightLeft size={14} />
+                                </button>
+                            )}
+
                             {canEdit && (
                                 <button
                                     className="btn btn-sm btn-outline-warning"
@@ -321,7 +335,7 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
     );
 }
 
-function DayColumn({ day, schedules, onEdit, onDelete, onEmptyClick, ghostBlock, isAdmin }) {
+function DayColumn({ day, schedules, onEdit, onDelete, onTransfer, onEmptyClick, ghostBlock, isAdmin }) {
     const daySchedules = useMemo(
         () => schedules.filter((s) => s.day_of_week === day),
         [schedules, day],
@@ -383,6 +397,7 @@ function DayColumn({ day, schedules, onEdit, onDelete, onEmptyClick, ghostBlock,
                     schedule={schedule}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onTransfer={onTransfer}
                     isAdmin={isAdmin}
                 />
             ))}
@@ -397,6 +412,7 @@ function DayColumn({ day, schedules, onEdit, onDelete, onEmptyClick, ghostBlock,
  * @param {boolean}  loading       - Whether schedules are currently loading
  * @param {Function} onEdit        - Called with schedule id when edit is triggered
  * @param {Function} onDelete      - Called with (id, subjectCode, section) for deletion
+ * @param {Function} onTransfer    - Called with schedule object when transfer is triggered
  * @param {Function} onEmptyClick  - Called with { day, startTime, endTime, anchorRect }
  * @param {Object}   ghostBlock    - Current popover data for ghost block preview (or null)
  * @param {boolean}  isAdmin       - Admin mode (all blocks fully visible & editable)
@@ -407,6 +423,7 @@ export default function ScheduleCalendarGrid({
     loading = false,
     onEdit,
     onDelete,
+    onTransfer,
     onEmptyClick,
     ghostBlock = null,
     isAdmin = false,
@@ -432,6 +449,7 @@ export default function ScheduleCalendarGrid({
                         schedules={schedules}
                         onEdit={onEdit}
                         onDelete={onDelete}
+                        onTransfer={onTransfer}
                         onEmptyClick={onEmptyClick}
                         ghostBlock={ghostBlock}
                         isAdmin={isAdmin}

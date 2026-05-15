@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Base from "@/Layouts/Base";
 import ScheduleCalendarGrid from "@/Components/Schedule/ScheduleCalendarGrid";
 import AdminInlineSchedulePopover from "@/Pages/Admin/Core/Forms/AdminInlineSchedulePopover";
+import TransferScheduleModal from "@/Pages/Admin/Core/Forms/TransferScheduleModal";
 import { LuArrowLeft, LuDoorOpen } from "react-icons/lu";
 
 const shortCode = (code) => {
@@ -35,6 +36,9 @@ export default function RoomUtilizationGrid() {
     const [popoverData, setPopoverData] = useState(null);
     const calendarRef = useRef(null);
 
+    const [transferSchedule, setTransferSchedule] = useState(null);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
     useEffect(() => {
         setGridSchedules(schedules);
     }, [schedules]);
@@ -45,6 +49,11 @@ export default function RoomUtilizationGrid() {
 
     const handleGridEdit = (id) => {
         router.get(`${route("admin.core.room-schedules.edit", id)}?return_context=room-utilization-grid`);
+    };
+
+    const handleGridTransfer = (schedule) => {
+        setTransferSchedule(schedule);
+        setIsTransferModalOpen(true);
     };
 
     const handleGridDelete = (id, subjectCode, section) => {
@@ -176,6 +185,7 @@ export default function RoomUtilizationGrid() {
                         isAdmin={true}
                         onEdit={handleGridEdit}
                         onDelete={handleGridDelete}
+                        onTransfer={handleGridTransfer}
                         onEmptyClick={handleEmptyClick}
                         ghostBlock={popoverData}
                         calendarRef={calendarRef}
@@ -199,6 +209,13 @@ export default function RoomUtilizationGrid() {
                         onSaved={handlePopoverSaved}
                     />
                 )}
+
+                <TransferScheduleModal
+                    isOpen={isTransferModalOpen}
+                    onClose={() => setIsTransferModalOpen(false)}
+                    schedule={transferSchedule}
+                    onTransferSuccess={loadGridSchedules}
+                />
             </Base>
         </>
     );

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Utilities\BuildingController;
 use App\Http\Controllers\Admin\Core\RoomScheduleController;
 use App\Http\Controllers\Admin\Core\SubjectController;
 use App\Http\Controllers\Admin\Reports\RoomUtilizationController;
+use App\Http\Controllers\Admin\Reports\ScheduleReassignmentController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\Utilities\ProfessorController;
 use App\Http\Controllers\Admin\Utilities\RoomController;
@@ -87,6 +88,7 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::post('store', [RoomScheduleController::class, 'store'])->name('store');
             Route::post('ajax-store', [RoomScheduleController::class, 'ajaxStore'])->name('ajax-store');
             Route::put('{id}', [RoomScheduleController::class, 'update'])->name('update');
+            Route::post('transfer/{id}', [RoomScheduleController::class, 'transfer'])->name('transfer');
             Route::delete('delete/{id}', [RoomScheduleController::class, 'destroy'])->name('delete');
         });
 
@@ -110,6 +112,11 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::post('grid/open', [RoomUtilizationController::class, 'openGrid'])->name('grid.open');
             Route::post('grid/return', [RoomUtilizationController::class, 'returnFromGrid'])->name('grid.return');
             Route::get('grid', [RoomUtilizationController::class, 'grid'])->name('grid');
+        });
+
+        Route::prefix('schedule-reassignment')->name('schedule-reassignment.')->group(function () {
+            Route::get('/', [ScheduleReassignmentController::class, 'index'])->name('index');
+            Route::get('data', [ScheduleReassignmentController::class, 'getData'])->name('data');
         });
     });
 

@@ -8,7 +8,8 @@ import SelectField from "@/Components/Input/SelectField";
 import ScheduleCalendarGrid from "@/Components/Schedule/ScheduleCalendarGrid";
 import FilterRoomScheduleOffcanvas from "./Forms/FilterRoomScheduleOffcanvas";
 import AdminInlineSchedulePopover from "./Forms/AdminInlineSchedulePopover";
-import { LuCalendarRange, LuDoorOpen, LuSchool, LuArrowLeft, LuLayoutGrid, LuLayoutList } from "react-icons/lu";
+import TransferScheduleModal from "./Forms/TransferScheduleModal";
+import { LuCalendarRange, LuDoorOpen, LuSchool, LuArrowLeft, LuLayoutGrid, LuLayoutList, LuArrowRightLeft } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 const formatTime = (value) => {
@@ -122,6 +123,10 @@ export default function RoomSchedule() {
     const [popoverData, setPopoverData] = useState(null);
     const [statsCollapsed, setStatsCollapsed] = useState(false);
     const calendarRef = useRef(null);
+
+    // ── Transfer state ───────────────────────────────────
+    const [transferSchedule, setTransferSchedule] = useState(null);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
     useEffect(() => {
         try {
@@ -300,7 +305,8 @@ export default function RoomSchedule() {
                     data: "room_code",
                     width: "18%",
                     render: (data, type, row) => `
-                        <div class="d-flex flex-column">
+                        <div class="d-flex flex-column align-items-start">
+                            ${row.is_transferred ? '<span class="badge bg-label-danger fw-bold mb-1" style="font-size: 0.70rem;">To Transfer</span>' : ''}
                             <span class="fw-medium">${data ?? "-"}</span>
                             <small class="text-muted">${row.building_code ?? ""} ${row.building_name ? `- ${row.building_name}` : ""}</small>
                             <small class="text-muted">${row.room_type ?? "-"}</small>
@@ -329,8 +335,15 @@ export default function RoomSchedule() {
                     render: (data, type, row) => {
                         const editIcon = renderToString(<BiSolidEdit size={16} />);
                         const deleteIcon = renderToString(<BiSolidTrash size={16} />);
+                        const transferIcon = renderToString(<LuArrowRightLeft size={16} />);
+                        
+                        const scheduleData = encodeURIComponent(JSON.stringify(row));
 
                         return `
+                            <button class="btn btn-sm btn-outline-info me-1" title="To Transfer" onclick="roomScheduleCRUD.transfer('${scheduleData}')">
+                                ${transferIcon}
+                            </button>
+
                             <button class="btn btn-sm btn-outline-warning me-1" title="Edit schedule" onclick="roomScheduleCRUD.edit('${row.id}')">
                                 ${editIcon}
                             </button>
@@ -349,6 +362,12 @@ export default function RoomSchedule() {
 
         window.roomScheduleCRUD.edit = (id) => {
             router.get(route("admin.core.room-schedules.edit", id));
+        };
+
+        window.roomScheduleCRUD.transfer = (encodedData) => {
+            const schedule = JSON.parse(decodeURIComponent(encodedData));
+            setTransferSchedule(schedule);
+            setIsTransferModalOpen(true);
         };
 
         window.roomScheduleCRUD.delete = (id, subjectCode, section) => {
@@ -429,6 +448,11 @@ export default function RoomSchedule() {
 
     const handleGridEdit = (id) => {
         router.get(route("admin.core.room-schedules.edit", id));
+    };
+
+    const handleGridTransfer = (schedule) => {
+        setTransferSchedule(schedule);
+        setIsTransferModalOpen(true);
     };
 
     const handleGridDelete = (id, subjectCode, section) => {
@@ -652,6 +676,7 @@ export default function RoomSchedule() {
                                 loading={gridLoading}
                                 onEdit={handleGridEdit}
                                 onDelete={handleGridDelete}
+                                onTransfer={handleGridTransfer}
                                 onEmptyClick={handleEmptyClick}
                                 ghostBlock={popoverData}
                                 isAdmin={true}
@@ -702,6 +727,19 @@ export default function RoomSchedule() {
                     rooms={rooms}
                     dayOptions={dayOptions}
                     onApply={applyFilters}
+                />
+
+                <TransferScheduleModal
+                    isOpen={isTransferModalOpen}
+                    onClose={() => setIsTransferModalOpen(false)}
+                    schedule={transferSchedule}
+                    onTransferSuccess={() => {
+                        if (viewMode === "table") {
+                            tableRef.current?.ajax.reload(null, false);
+                        } else {
+                            loadGridSchedules();
+                        }
+                    }}
                 />
             </Base>
         </>

@@ -387,6 +387,10 @@ export default function CreateAndEditRoomSchedule({
     };
 
     const roomFieldHelp = useMemo(() => {
+        if (isEditing) {
+            return "Room assignment cannot be changed during editing. Use the Transfer feature from the schedule list instead.";
+        }
+
         if (!data.day_of_week || !data.start_time || !data.end_time) {
             return "Select the day, start time, and end time to load available rooms.";
         }
@@ -414,6 +418,7 @@ export default function CreateAndEditRoomSchedule({
         data.end_time,
         data.start_time,
         loadingAvailableRooms,
+        isEditing,
     ]);
 
     const roomPlaceholder = useMemo(() => {
@@ -783,7 +788,7 @@ export default function CreateAndEditRoomSchedule({
                                 renderOption={(room) => `${room.code} (${room.type})`}
                                 error={errors.room_id}
                                 help={roomFieldHelp}
-                                disabled={!canLoadAvailability || loadingAvailableRooms || availableRooms.length === 0}
+                                disabled={isEditing || !canLoadAvailability || loadingAvailableRooms || availableRooms.length === 0}
                                 required
                             />
 
