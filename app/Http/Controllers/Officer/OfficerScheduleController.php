@@ -96,6 +96,7 @@ class OfficerScheduleController extends Controller
                 'room_schedules.end_time',
                 'room_schedules.section',
                 'room_schedules.notes',
+                'room_schedules.transfer_status',
                 'subjects.name as subject_name',
                 'subjects.code as subject_code',
                 'subjects.class_type as subject_class_type',
@@ -112,6 +113,21 @@ class OfficerScheduleController extends Controller
             ->map(function ($schedule) use ($departmentId) {
                 $isOwn = (int) $schedule->department_id === (int) $departmentId;
                 $isCreatedByAdmin = $schedule->creator_user_type === 'ADMIN';
+                $isToTransfer = $schedule->transfer_status === 'TO_TRANSFER';
+
+                // "To Transfer" schedules should be non-interactive for officers
+                if ($isToTransfer) {
+                    return [
+                        'id' => null,
+                        'day_of_week' => $schedule->day_of_week,
+                        'start_time' => substr((string) $schedule->start_time, 0, 5),
+                        'end_time' => substr((string) $schedule->end_time, 0, 5),
+                        'department_name' => $schedule->department_name,
+                        'department_code' => $schedule->department_code,
+                        'is_own' => false,
+                        'transfer_status' => 'TO_TRANSFER',
+                    ];
+                }
 
                 if ($isOwn) {
                     return [
@@ -128,6 +144,7 @@ class OfficerScheduleController extends Controller
                         'is_own' => true,
                         'is_created_by_admin' => $isCreatedByAdmin,
                         'can_delete' => !$isCreatedByAdmin,
+                        'transfer_status' => null,
                         'created_by_label' => $this->formatCreatorLabel(
                             $schedule->creator_name,
                             $schedule->creator_user_type,
@@ -143,6 +160,7 @@ class OfficerScheduleController extends Controller
                     'department_name' => $schedule->department_name,
                     'department_code' => $schedule->department_code,
                     'is_own' => false,
+                    'transfer_status' => null,
                 ];
             });
 

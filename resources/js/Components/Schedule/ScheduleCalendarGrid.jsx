@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LuTrash2, LuCalendarRange } from "react-icons/lu";
+import { LuTrash2, LuCalendarRange, LuArrowRightLeft, LuUndo2, LuFlag } from "react-icons/lu";
 import { BiSolidEdit } from "react-icons/bi";
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
@@ -103,18 +103,24 @@ function HourLines() {
  *
  * @param {boolean} isAdmin - When true, all blocks show full details and use any supplied actions.
  */
-function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
+function ScheduleBlock({ schedule, onEdit, onDelete, onMarkToTransfer, onRevertTransfer, onExecuteTransfer, isAdmin }) {
     const [showTooltip, setShowTooltip] = useState(false);
     const blockRef = useRef(null);
     const tooltipRef = useRef(null);
     const hoverTimeout = useRef(null);
 
+    const isToTransfer = schedule.transfer_status === "TO_TRANSFER";
     const canViewDetails = isAdmin || schedule.is_own;
-    const canEdit = canViewDetails && typeof onEdit === "function" && Boolean(schedule.id);
+    const canEdit = canViewDetails && typeof onEdit === "function" && Boolean(schedule.id) && !isToTransfer;
     const canDelete = typeof onDelete === "function" && (isAdmin || schedule.can_delete);
-    const hasActions = canEdit || canDelete;
+    const canMarkTransfer = isAdmin && !isToTransfer && typeof onMarkToTransfer === "function" && Boolean(schedule.id);
+    const canRevert = isAdmin && isToTransfer && typeof onRevertTransfer === "function" && Boolean(schedule.id);
+    const canTransfer = isAdmin && isToTransfer && typeof onExecuteTransfer === "function" && Boolean(schedule.id);
+    const hasActions = canEdit || canDelete || canMarkTransfer || canRevert || canTransfer;
 
     const handleMouseEnter = () => {
+        // Officers can't interact with TO_TRANSFER blocks
+        if (!isAdmin && isToTransfer) return;
         if (!canViewDetails) return;
 
         hoverTimeout.current = setTimeout(() => setShowTooltip(true), 300);
@@ -177,10 +183,14 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
         ? `${subjectDisplay} (${schedule.subject_class_type})`
         : subjectDisplay;
 
+    const blockClass = isToTransfer
+        ? `officer-schedule-block to-transfer${isCompactAdminBlock ? " compact-admin" : ""}${isUltraCompactAdminBlock ? " ultra-compact-admin" : ""}`
+        : `officer-schedule-block ${showFull ? "own" : "other"}${isCompactAdminBlock ? " compact-admin" : ""}${isUltraCompactAdminBlock ? " ultra-compact-admin" : ""}`;
+
     return (
         <div
             ref={blockRef}
-            className={`officer-schedule-block ${showFull ? "own" : "other"}${isCompactAdminBlock ? " compact-admin" : ""}${isUltraCompactAdminBlock ? " ultra-compact-admin" : ""}`}
+            className={blockClass}
             style={getBlockStyle(schedule.start_time, schedule.end_time)}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -232,9 +242,14 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
             {showTooltip && canViewDetails && (
                 <div
                     ref={tooltipRef}
-                    className="officer-schedule-tooltip"
+                    className={`officer-schedule-tooltip${isToTransfer ? " to-transfer-tooltip" : ""}`}
                     onClick={(e) => e.stopPropagation()}
                 >
+                    {isToTransfer && (
+                        <div className="mb-1">
+                            <span className="badge badge-to-transfer">To Transfer</span>
+                        </div>
+                    )}
                     <div className="tooltip-title">
                         {isAdmin && departmentDisplay
                             ? departmentDisplay
@@ -288,30 +303,69 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
 
                     {hasActions && (
                         <div className="tooltip-actions">
+                            {canMarkTransfer && (
+                                <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    title="Mark as To Transfer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onMarkToTransfer(schedule.id, schedule.subject_code, schedule.section);
+                                    }}
+                                >
+                                    <LuFlag size={14} />
+                                </button>
+                            )}
+
                             {canEdit && (
                                 <button
                                     className="btn btn-sm btn-outline-warning"
+                                    title="Edit"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onEdit(schedule.id);
                                     }}
                                 >
-                                    <BiSolidEdit size={14} className="me-1" />
-                                    Edit
+                                    <BiSolidEdit size={14} />
+                                </button>
+                            )}
+
+                            {canTransfer && (
+                                <button
+                                    className="btn btn-sm btn-danger"
+                                    title="Transfer to another room"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onExecuteTransfer(schedule.id, schedule.subject_code, schedule.section);
+                                    }}
+                                >
+                                    <LuArrowRightLeft size={14} />
+                                </button>
+                            )}
+
+                            {canRevert && (
+                                <button
+                                    className="btn btn-sm btn-outline-secondary"
+                                    title="Revert transfer status"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRevertTransfer(schedule.id, schedule.subject_code, schedule.section);
+                                    }}
+                                >
+                                    <LuUndo2 size={14} />
                                 </button>
                             )}
 
                             {canDelete && (
-                            <button
-                                className="btn btn-sm btn-outline-danger"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete(schedule.id, schedule.subject_code, schedule.section);
-                                }}
-                            >
-                                <LuTrash2 size={14} className="me-1" />
-                                Delete
-                            </button>
+                                <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    title="Delete"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(schedule.id, schedule.subject_code, schedule.section);
+                                    }}
+                                >
+                                    <LuTrash2 size={14} />
+                                </button>
                             )}
                         </div>
                     )}
@@ -321,7 +375,7 @@ function ScheduleBlock({ schedule, onEdit, onDelete, isAdmin }) {
     );
 }
 
-function DayColumn({ day, schedules, onEdit, onDelete, onEmptyClick, ghostBlock, isAdmin }) {
+function DayColumn({ day, schedules, onEdit, onDelete, onMarkToTransfer, onRevertTransfer, onExecuteTransfer, onEmptyClick, ghostBlock, isAdmin }) {
     const daySchedules = useMemo(
         () => schedules.filter((s) => s.day_of_week === day),
         [schedules, day],
@@ -383,6 +437,9 @@ function DayColumn({ day, schedules, onEdit, onDelete, onEmptyClick, ghostBlock,
                     schedule={schedule}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onMarkToTransfer={onMarkToTransfer}
+                    onRevertTransfer={onRevertTransfer}
+                    onExecuteTransfer={onExecuteTransfer}
                     isAdmin={isAdmin}
                 />
             ))}
@@ -407,6 +464,9 @@ export default function ScheduleCalendarGrid({
     loading = false,
     onEdit,
     onDelete,
+    onMarkToTransfer,
+    onRevertTransfer,
+    onExecuteTransfer,
     onEmptyClick,
     ghostBlock = null,
     isAdmin = false,
@@ -432,6 +492,9 @@ export default function ScheduleCalendarGrid({
                         schedules={schedules}
                         onEdit={onEdit}
                         onDelete={onDelete}
+                        onMarkToTransfer={onMarkToTransfer}
+                        onRevertTransfer={onRevertTransfer}
+                        onExecuteTransfer={onExecuteTransfer}
                         onEmptyClick={onEmptyClick}
                         ghostBlock={ghostBlock}
                         isAdmin={isAdmin}

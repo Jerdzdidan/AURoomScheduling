@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Professor;
 use App\Models\Room;
 use App\Models\RoomSchedule;
+use App\Models\ScheduleTransfer;
 use App\Models\Subject;
 use Carbon\Carbon;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -74,6 +75,7 @@ class RoomScheduleController extends Controller
                 'room_schedules.academic_period_id',
                 'room_schedules.subject_id',
                 'room_schedules.room_id',
+                'room_schedules.transfer_status',
                 'academic_periods.name as academic_period_name',
                 'academic_periods.academic_year as academic_period_academic_year',
                 'academic_periods.semester as academic_period_semester',
@@ -113,6 +115,14 @@ class RoomScheduleController extends Controller
 
         if ($roomId = request()->input('filter_room_id')) {
             $roomSchedules->where('rooms.id', $roomId);
+        }
+
+        if ($transferStatus = request()->input('filter_transfer_status')) {
+            if ($transferStatus === 'NONE') {
+                $roomSchedules->whereNull('room_schedules.transfer_status');
+            } else {
+                $roomSchedules->where('room_schedules.transfer_status', $transferStatus);
+            }
         }
 
         return DataTables::of($roomSchedules)
@@ -179,6 +189,7 @@ class RoomScheduleController extends Controller
                 'room_schedules.end_time',
                 'room_schedules.section',
                 'room_schedules.notes',
+                'room_schedules.transfer_status',
                 'subjects.name as subject_name',
                 'subjects.code as subject_code',
                 'subjects.class_type as subject_class_type',
@@ -210,6 +221,7 @@ class RoomScheduleController extends Controller
                     'department_name' => $schedule->department_name,
                     'department_code' => $schedule->department_code,
                     'notes' => $schedule->notes,
+                    'transfer_status' => $schedule->transfer_status,
                     'is_own' => true,
                     'can_delete' => true,
                     'created_by_label' => $creatorLabel,
@@ -417,6 +429,13 @@ class RoomScheduleController extends Controller
     {
         try {
             $roomSchedule = $this->findScheduleOrFail($id);
+
+            if ($roomSchedule->transfer_status === 'TO_TRANSFER') {
+                return back()->withErrors([
+                    'room_id' => 'This schedule is marked "To Transfer" and cannot be edited. Revert the transfer status first.',
+                ]);
+            }
+
             $validated = $this->validateSchedule($request, $roomSchedule);
 
             $roomSchedule->update($this->buildSchedulePayload($validated));
@@ -426,6 +445,124 @@ class RoomScheduleController extends Controller
             }
 
             return to_route('admin.core.room-schedules.index');
+        } catch (DecryptException) {
+            return response()->json(['message' => 'Invalid room schedule ID.'], 400);
+        }
+    }
+
+    public function markToTransfer($id)
+    {
+        try {
+            $roomSchedule = $this->findScheduleOrFail($id);
+
+            if ($roomSchedule->transfer_status === 'TO_TRANSFER') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This schedule is already marked as "To Transfer".',
+                ], 422);
+            }
+
+            $roomSchedule->update(['transfer_status' => 'TO_TRANSFER']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Schedule marked as "To Transfer" successfully.',
+            ]);
+        } catch (DecryptException) {
+            return response()->json(['message' => 'Invalid room schedule ID.'], 400);
+        }
+    }
+
+    public function revertTransfer($id)
+    {
+        try {
+            $roomSchedule = $this->findScheduleOrFail($id);
+
+            if ($roomSchedule->transfer_status !== 'TO_TRANSFER') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This schedule is not marked as "To Transfer".',
+                ], 422);
+            }
+
+            $roomSchedule->update([
+                'transfer_status' => null,
+                'transfer_remarks' => null,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transfer status reverted successfully.',
+            ]);
+        } catch (DecryptException) {
+            return response()->json(['message' => 'Invalid room schedule ID.'], 400);
+        }
+    }
+
+    public function executeTransfer(Request $request, $id)
+    {
+        try {
+            $roomSchedule = $this->findScheduleOrFail($id);
+
+            if ($roomSchedule->transfer_status !== 'TO_TRANSFER') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This schedule must be marked as "To Transfer" before it can be transferred.',
+                ], 422);
+            }
+
+            $validated = $request->validate([
+                'transferred_room_id' => ['required', 'integer', 'exists:rooms,id'],
+                'remarks' => ['required', 'string', 'max:1000'],
+            ]);
+
+            $previousRoomId = $roomSchedule->room_id;
+
+            if ((int) $validated['transferred_room_id'] === (int) $previousRoomId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The transferred room must be different from the current room.',
+                ], 422);
+            }
+
+            // Check for conflicts in the new room
+            $conflict = RoomSchedule::query()
+                ->where('academic_period_id', $roomSchedule->academic_period_id)
+                ->where('room_id', $validated['transferred_room_id'])
+                ->where('day_of_week', $roomSchedule->day_of_week)
+                ->whereKeyNot($roomSchedule->id)
+                ->where('start_time', '<', $roomSchedule->end_time)
+                ->where('end_time', '>', $roomSchedule->start_time)
+                ->first();
+
+            if ($conflict) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The selected room has a scheduling conflict at this time.',
+                ], 422);
+            }
+
+            // Create transfer history record
+            ScheduleTransfer::create([
+                'room_schedule_id' => $roomSchedule->id,
+                'previous_room_id' => $previousRoomId,
+                'transferred_room_id' => (int) $validated['transferred_room_id'],
+                'remarks' => $validated['remarks'],
+                'transferred_by_user_id' => auth()->id(),
+                'transferred_at' => now(),
+            ]);
+
+            // Update the schedule to the new room and clear transfer status
+            $roomSchedule->update([
+                'room_id' => (int) $validated['transferred_room_id'],
+                'transfer_status' => null,
+                'transfer_remarks' => $validated['remarks'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Schedule transferred successfully.',
+            ]);
         } catch (DecryptException) {
             return response()->json(['message' => 'Invalid room schedule ID.'], 400);
         }
@@ -708,6 +845,7 @@ class RoomScheduleController extends Controller
             'start_time' => substr((string) $roomSchedule->start_time, 0, 5),
             'end_time' => substr((string) $roomSchedule->end_time, 0, 5),
             'notes' => $roomSchedule->notes ?? '',
+            'transfer_status' => $roomSchedule->transfer_status,
         ];
     }
 

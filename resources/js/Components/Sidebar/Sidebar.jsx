@@ -6,7 +6,7 @@ import {
     LuCalendarRange, LuHouse, LuBookText,
     LuSchool, LuUniversity, LuDoorOpen, LuBuilding2,
     LuLayoutList, LuUsers, LuIdCard, LuPlus, LuSearch,
-    LuCalendarCheck,
+    LuCalendarCheck, LuArrowRightLeft,
 } from "react-icons/lu";
 
 function Admin() {
@@ -67,6 +67,12 @@ function Admin() {
                 routeName="admin.reports.room-utilization.index"
                 Icon={LuCalendarCheck}
                 name="Room Utilization"
+            />
+
+            <SidebarItem
+                routeName="admin.reports.transfer-history.index"
+                Icon={LuArrowRightLeft}
+                name="Transfer History"
             />
 
             <li className="menu-header small text-uppercase">

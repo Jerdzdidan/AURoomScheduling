@@ -1,14 +1,13 @@
 import { useMemo } from "react";
 import SelectField from "@/Components/Input/SelectField";
 
-export default function FilterRoomScheduleOffcanvas({
+export default function FilterTransferHistoryOffcanvas({
     filters,
     setFilters,
-    academicPeriods,
     branches,
     departments,
-    subjects,
     rooms,
+    adminUsers,
     dayOptions,
     onApply,
 }) {
@@ -22,65 +21,45 @@ export default function FilterRoomScheduleOffcanvas({
         );
     }, [departments, filters.branch_id]);
 
-    const filteredSubjects = useMemo(() => {
-        if (!filters.department_id) {
-            return [];
-        }
-
-        return subjects.filter(
-            (subject) => subject.department_id?.toString() === filters.department_id?.toString(),
-        );
-    }, [subjects, filters.department_id]);
-
     const filteredRooms = useMemo(() => {
         if (!filters.branch_id) {
             return [];
         }
 
-        return rooms.filter((room) => {
-            if (room.branch_id?.toString() !== filters.branch_id?.toString()) {
-                return false;
-            }
-
-            if (!filters.department_id) {
-                return true;
-            }
-
-            return (room.department_ids ?? []).includes(filters.department_id?.toString());
-        });
-    }, [rooms, filters.branch_id, filters.department_id]);
+        return rooms.filter(
+            (room) => room.branch_id?.toString() === filters.branch_id?.toString(),
+        );
+    }, [rooms, filters.branch_id]);
 
     const handleApply = () => {
         onApply();
-        $("#filterRoomScheduleOffcanvas").offcanvas("hide");
+        $("#filterTransferHistoryOffcanvas").offcanvas("hide");
     };
 
     const handleClear = () => {
         const cleared = {
-            academic_period_id: "",
             branch_id: "",
             department_id: "",
-            subject_id: "",
             day_of_week: "",
             room_id: "",
-            transfer_status: "",
+            user_id: "",
         };
 
         setFilters(cleared);
         onApply(cleared);
-        $("#filterRoomScheduleOffcanvas").offcanvas("hide");
+        $("#filterTransferHistoryOffcanvas").offcanvas("hide");
     };
 
     return (
         <div
             className="offcanvas offcanvas-end"
-            id="filterRoomScheduleOffcanvas"
+            id="filterTransferHistoryOffcanvas"
             tabIndex="-1"
-            aria-labelledby="filterRoomScheduleOffcanvasLabel"
+            aria-labelledby="filterTransferHistoryOffcanvasLabel"
         >
             <div className="offcanvas-header border-bottom">
-                <h5 className="offcanvas-title" id="filterRoomScheduleOffcanvasLabel">
-                    Filter Room Schedules
+                <h5 className="offcanvas-title" id="filterTransferHistoryOffcanvasLabel">
+                    Filter Transfer History
                 </h5>
                 <button
                     type="button"
@@ -92,23 +71,7 @@ export default function FilterRoomScheduleOffcanvas({
 
             <div className="offcanvas-body flex-grow-1">
                 <SelectField
-                    id="filter-schedule-academic-period"
-                    label="Academic Period"
-                    name="academic_period_id"
-                    placeholder="All academic periods"
-                    value={filters.academic_period_id}
-                    onChange={(value) =>
-                        setFilters((current) => ({
-                            ...current,
-                            academic_period_id: value,
-                        }))
-                    }
-                    options={academicPeriods}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
-                />
-
-                <SelectField
-                    id="filter-schedule-branch"
+                    id="filter-transfer-branch"
                     label="Branch"
                     name="branch_id"
                     placeholder="All branches"
@@ -118,16 +81,15 @@ export default function FilterRoomScheduleOffcanvas({
                             ...current,
                             branch_id: value,
                             department_id: "",
-                            subject_id: "",
                             room_id: "",
                         }))
                     }
                     options={branches}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
+                    dropdownParent="#filterTransferHistoryOffcanvas"
                 />
 
                 <SelectField
-                    id="filter-schedule-department"
+                    id="filter-transfer-department"
                     label="Department"
                     name="department_id"
                     placeholder={filters.branch_id ? "All departments" : "Select a branch first"}
@@ -136,36 +98,16 @@ export default function FilterRoomScheduleOffcanvas({
                         setFilters((current) => ({
                             ...current,
                             department_id: value,
-                            subject_id: "",
-                            room_id: "",
                         }))
                     }
                     options={filteredDepartments}
                     renderOption={(department) => `${department.code} - ${department.name}`}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
+                    dropdownParent="#filterTransferHistoryOffcanvas"
                     disabled={!filters.branch_id}
                 />
 
                 <SelectField
-                    id="filter-schedule-subject"
-                    label="Subject"
-                    name="subject_id"
-                    placeholder={filters.department_id ? "All subjects" : "Select a department first"}
-                    value={filters.subject_id}
-                    onChange={(value) =>
-                        setFilters((current) => ({
-                            ...current,
-                            subject_id: value,
-                        }))
-                    }
-                    options={filteredSubjects}
-                    renderOption={(subject) => `${subject.code} - ${subject.name}`}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
-                    disabled={!filters.department_id}
-                />
-
-                <SelectField
-                    id="filter-schedule-day"
+                    id="filter-transfer-day"
                     label="Day"
                     name="day_of_week"
                     placeholder="All days"
@@ -177,11 +119,11 @@ export default function FilterRoomScheduleOffcanvas({
                         }))
                     }
                     options={dayOptions}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
+                    dropdownParent="#filterTransferHistoryOffcanvas"
                 />
 
                 <SelectField
-                    id="filter-schedule-room"
+                    id="filter-transfer-room"
                     label="Room"
                     name="room_id"
                     placeholder={filters.branch_id ? "All rooms" : "Select a branch first"}
@@ -194,27 +136,24 @@ export default function FilterRoomScheduleOffcanvas({
                     }
                     options={filteredRooms}
                     renderOption={(room) => room.code}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
+                    dropdownParent="#filterTransferHistoryOffcanvas"
                     disabled={!filters.branch_id}
                 />
 
                 <SelectField
-                    id="filter-schedule-transfer-status"
-                    label="Transfer Status"
-                    name="transfer_status"
-                    placeholder="All statuses"
-                    value={filters.transfer_status}
+                    id="filter-transfer-user"
+                    label="Transferred By"
+                    name="user_id"
+                    placeholder="All users"
+                    value={filters.user_id}
                     onChange={(value) =>
                         setFilters((current) => ({
                             ...current,
-                            transfer_status: value,
+                            user_id: value,
                         }))
                     }
-                    options={[
-                        { id: "TO_TRANSFER", name: "To Transfer" },
-                        { id: "NONE", name: "No Transfer Status" },
-                    ]}
-                    dropdownParent="#filterRoomScheduleOffcanvas"
+                    options={adminUsers}
+                    dropdownParent="#filterTransferHistoryOffcanvas"
                 />
 
                 <div className="pt-2">

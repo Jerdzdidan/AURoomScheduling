@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Utilities\BuildingController;
 use App\Http\Controllers\Admin\Core\RoomScheduleController;
 use App\Http\Controllers\Admin\Core\SubjectController;
 use App\Http\Controllers\Admin\Reports\RoomUtilizationController;
+use App\Http\Controllers\Admin\Reports\TransferHistoryController;
 use App\Http\Controllers\Admin\UserManagement\UserController;
 use App\Http\Controllers\Admin\Utilities\ProfessorController;
 use App\Http\Controllers\Admin\Utilities\RoomController;
@@ -88,6 +89,9 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::post('ajax-store', [RoomScheduleController::class, 'ajaxStore'])->name('ajax-store');
             Route::put('{id}', [RoomScheduleController::class, 'update'])->name('update');
             Route::delete('delete/{id}', [RoomScheduleController::class, 'destroy'])->name('delete');
+            Route::post('mark-to-transfer/{id}', [RoomScheduleController::class, 'markToTransfer'])->name('mark-to-transfer');
+            Route::post('revert-transfer/{id}', [RoomScheduleController::class, 'revertTransfer'])->name('revert-transfer');
+            Route::post('execute-transfer/{id}', [RoomScheduleController::class, 'executeTransfer'])->name('execute-transfer');
         });
 
         Route::prefix('subjects')->name('subjects.')->group(function () {
@@ -110,6 +114,12 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
             Route::post('grid/open', [RoomUtilizationController::class, 'openGrid'])->name('grid.open');
             Route::post('grid/return', [RoomUtilizationController::class, 'returnFromGrid'])->name('grid.return');
             Route::get('grid', [RoomUtilizationController::class, 'grid'])->name('grid');
+        });
+
+        Route::prefix('transfer-history')->name('transfer-history.')->group(function () {
+            Route::get('/', [TransferHistoryController::class, 'index'])->name('index');
+            Route::get('data', [TransferHistoryController::class, 'getData'])->name('data');
+            Route::get('stats', [TransferHistoryController::class, 'getStats'])->name('stats');
         });
     });
 

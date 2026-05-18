@@ -17,6 +17,8 @@ class RoomSchedule extends Model
         'start_time',
         'end_time',
         'notes',
+        'transfer_status',
+        'transfer_remarks',
     ];
 
     public function academicPeriod()
@@ -42,5 +44,10 @@ class RoomSchedule extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function transfers()
+    {
+        return $this->hasMany(ScheduleTransfer::class);
     }
 }

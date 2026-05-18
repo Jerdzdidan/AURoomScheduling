@@ -512,6 +512,15 @@ export default function CreateAndEditRoomSchedule({
                         </p>
                     </div>
 
+                    {isEditing && roomSchedule?.transfer_status === "TO_TRANSFER" && (
+                        <div className="alert alert-danger d-flex align-items-center gap-2 mb-0 py-2 px-3 w-100" role="alert">
+                            <i className="bx bx-error-circle fs-5"></i>
+                            <div>
+                                This schedule is marked as <strong>"To Transfer"</strong>. You must revert the transfer status before editing.
+                            </div>
+                        </div>
+                    )}
+
                     <Link
                         href={backHref ?? route("admin.core.room-schedules.index")}
                         className="btn btn-label-secondary"

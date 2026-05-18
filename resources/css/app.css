@@ -87,11 +87,9 @@
 .room-schedule-period-banner {
     border: 1px solid rgba(24, 85, 169, 0.12);
     border-radius: 1rem;
-    background: linear-gradient(
-        135deg,
-        rgba(24, 85, 169, 0.06) 0%,
-        rgba(255, 255, 255, 1) 100%
-    );
+    background: linear-gradient(135deg,
+            rgba(24, 85, 169, 0.06) 0%,
+            rgba(255, 255, 255, 1) 100%);
     padding: 1rem 1.125rem;
 }
 
@@ -506,6 +504,7 @@
         opacity: 0;
         transform: translateY(4px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -680,8 +679,13 @@
 }
 
 @keyframes popoverBackdropFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .officer-inline-popover {
@@ -711,6 +715,7 @@
         opacity: 0;
         transform: translateY(6px) scale(0.97);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -838,7 +843,7 @@
     gap: 0.25rem;
 }
 
-.officer-inline-popover .popover-conflict-item + .popover-conflict-item {
+.officer-inline-popover .popover-conflict-item+.popover-conflict-item {
     margin-top: 0.25rem;
 }
 
@@ -927,4 +932,57 @@
     background: #1855a9;
     border-color: #1855a9;
     opacity: 0.85;
+}
+
+/* ── To Transfer Styles ─────────────────────────────────────── */
+
+.officer-schedule-block.to-transfer .officer-schedule-block-content {
+    background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+    border-left: 3px solid #dc2626;
+    color: #7f1d1d;
+    cursor: default;
+}
+
+.officer-schedule-block.to-transfer:hover .officer-schedule-block-content {
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.18);
+}
+
+.officer-schedule-block.to-transfer {
+    cursor: default;
+}
+
+.officer-schedule-block.to-transfer:hover {
+    transform: scale(1.015);
+    z-index: 5;
+}
+
+.officer-schedule-block.to-transfer .block-dept,
+.officer-schedule-block.to-transfer .block-subject,
+.officer-schedule-block.to-transfer .block-professor,
+.officer-schedule-block.to-transfer .block-time {
+    color: #991b1b;
+}
+
+/* To Transfer badge for table view */
+.badge-to-transfer {
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+    font-weight: 600;
+    font-size: 0.72rem;
+    padding: 0.25em 0.6em;
+    border-radius: 0.35rem;
+}
+
+/* To Transfer table row highlight */
+tr.row-to-transfer {
+    background-color: rgba(220, 38, 38, 0.04) !important;
+}
+
+tr.row-to-transfer:hover {
+    background-color: rgba(220, 38, 38, 0.08) !important;
+}
+
+/* To Transfer tooltip title override */
+.officer-schedule-tooltip.to-transfer-tooltip .tooltip-title {
+    color: #dc2626;
 }

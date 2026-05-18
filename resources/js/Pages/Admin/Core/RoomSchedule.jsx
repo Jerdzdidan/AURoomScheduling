@@ -5,10 +5,11 @@ import Base from "@/Layouts/Base";
 import StatsCard from "@/Components/Card/StatsCard";
 import ScrollableTable from "@/Components/Table/ScrollableTable";
 import SelectField from "@/Components/Input/SelectField";
+import ModalForm from "@/Components/Form/ModalForm";
 import ScheduleCalendarGrid from "@/Components/Schedule/ScheduleCalendarGrid";
 import FilterRoomScheduleOffcanvas from "./Forms/FilterRoomScheduleOffcanvas";
 import AdminInlineSchedulePopover from "./Forms/AdminInlineSchedulePopover";
-import { LuCalendarRange, LuDoorOpen, LuSchool, LuArrowLeft, LuLayoutGrid, LuLayoutList } from "react-icons/lu";
+import { LuCalendarRange, LuDoorOpen, LuSchool, LuArrowLeft, LuLayoutGrid, LuLayoutList, LuFlag, LuArrowRightLeft, LuUndo2 } from "react-icons/lu";
 import { BiSolidEdit, BiSolidTrash } from "react-icons/bi";
 
 const formatTime = (value) => {
@@ -98,6 +99,7 @@ export default function RoomSchedule() {
         subject_id: "",
         day_of_week: "",
         room_id: "",
+        transfer_status: "",
     });
     const [filters, setFilters] = useState({
         academic_period_id: "",
@@ -106,6 +108,7 @@ export default function RoomSchedule() {
         subject_id: "",
         day_of_week: "",
         room_id: "",
+        transfer_status: "",
     });
 
     const dayLabels = useMemo(
@@ -122,6 +125,13 @@ export default function RoomSchedule() {
     const [popoverData, setPopoverData] = useState(null);
     const [statsCollapsed, setStatsCollapsed] = useState(false);
     const calendarRef = useRef(null);
+
+    // ── Transfer modal state ──────────────────────────────
+    const [transferModal, setTransferModal] = useState({ open: false, id: null, subjectCode: "", section: "", onSuccess: null });
+    const [transferRoomId, setTransferRoomId] = useState("");
+    const [transferRemarks, setTransferRemarks] = useState("");
+    const [transferErrors, setTransferErrors] = useState({});
+    const [transferSubmitting, setTransferSubmitting] = useState(false);
 
     useEffect(() => {
         try {
@@ -263,22 +273,32 @@ export default function RoomSchedule() {
                     d.filter_subject_id = filtersRef.current.subject_id;
                     d.filter_day_of_week = filtersRef.current.day_of_week;
                     d.filter_room_id = filtersRef.current.room_id;
+                    d.filter_transfer_status = filtersRef.current.transfer_status;
                 },
+            },
+            createdRow: function (row, data) {
+                if (data.transfer_status === "TO_TRANSFER") {
+                    $(row).addClass("row-to-transfer");
+                }
             },
             columns: [
                 { data: "id", visible: false },
                 {
                     data: "academic_period_name",
-                    width: "20%",
+                    width: "18%",
                     render: (data, type, row) => {
                         const currentBadge = isCurrentPeriod(row.is_current_period)
                             ? `<span class="badge bg-label-success" style="width: fit-content;">Current</span>`
+                            : "";
+                        const transferBadge = row.transfer_status === "TO_TRANSFER"
+                            ? `<span class="badge badge-to-transfer" style="width: fit-content;">To Transfer</span>`
                             : "";
 
                         return `
                             <div class="d-flex flex-column">
                                 <span class="fw-medium">${formatAcademicPeriod(row)}</span>
                                 ${currentBadge}
+                                ${transferBadge}
                             </div>
                         `;
                     },
@@ -325,16 +345,36 @@ export default function RoomSchedule() {
                 {
                     data: null,
                     orderable: false,
-                    width: "10%",
+                    width: "12%",
                     render: (data, type, row) => {
                         const editIcon = renderToString(<BiSolidEdit size={16} />);
                         const deleteIcon = renderToString(<BiSolidTrash size={16} />);
+                        const flagIcon = renderToString(<LuFlag size={16} />);
+                        const transferIcon = renderToString(<LuArrowRightLeft size={16} />);
+                        const revertIcon = renderToString(<LuUndo2 size={16} />);
+                        const isToTransfer = row.transfer_status === "TO_TRANSFER";
+
+                        if (isToTransfer) {
+                            return `
+                                <button class="btn btn-sm btn-danger me-1" title="Transfer schedule" onclick='roomScheduleCRUD.executeTransfer(${JSON.stringify({id: row.id, subjectCode: row.subject_code, subjectName: row.subject_name, section: row.section, roomCode: row.room_code, dayOfWeek: row.day_of_week, startTime: row.start_time, endTime: row.end_time})})'>
+                                    ${transferIcon}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1" title="Revert transfer status" onclick="roomScheduleCRUD.revertTransfer('${row.id}', '${row.subject_code}', '${row.section}')">
+                                    ${revertIcon}
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Delete schedule" onclick="roomScheduleCRUD.delete('${row.id}', '${row.subject_code}', '${row.section}')">
+                                    ${deleteIcon}
+                                </button>
+                            `;
+                        }
 
                         return `
+                            <button class="btn btn-sm btn-outline-danger me-1" title="Mark as To Transfer" onclick="roomScheduleCRUD.markToTransfer('${row.id}', '${row.subject_code}', '${row.section}')">
+                                ${flagIcon}
+                            </button>
                             <button class="btn btn-sm btn-outline-warning me-1" title="Edit schedule" onclick="roomScheduleCRUD.edit('${row.id}')">
                                 ${editIcon}
                             </button>
-
                             <button class="btn btn-sm btn-outline-danger" title="Delete schedule" onclick="roomScheduleCRUD.delete('${row.id}', '${row.subject_code}', '${row.section}')">
                                 ${deleteIcon}
                             </button>
@@ -380,6 +420,67 @@ export default function RoomSchedule() {
                             toastr.error(message);
                         });
                 }
+            });
+        };
+
+        window.roomScheduleCRUD.markToTransfer = (id, subjectCode, section) => {
+            Swal.fire({
+                title: "Mark as To Transfer",
+                text: `Mark ${subjectCode} / ${section} as "To Transfer"?`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, mark it",
+                cancelButtonText: "Cancel",
+                customClass: {
+                    confirmButton: "btn btn-danger me-3",
+                    cancelButton: "btn btn-label-secondary",
+                },
+                buttonsStyling: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post(route("admin.core.room-schedules.mark-to-transfer", id))
+                        .done((res) => {
+                            toastr.success(res.message || "Schedule marked as To Transfer.");
+                            tableRef.current?.ajax.reload(null, false);
+                        })
+                        .fail((xhr) => {
+                            toastr.error(xhr.responseJSON?.message || "Failed to mark schedule.");
+                        });
+                }
+            });
+        };
+
+        window.roomScheduleCRUD.revertTransfer = (id, subjectCode, section) => {
+            Swal.fire({
+                title: "Revert Transfer Status",
+                text: `Revert "To Transfer" status for ${subjectCode} / ${section}?`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Yes, revert",
+                cancelButtonText: "Cancel",
+                customClass: {
+                    confirmButton: "btn btn-primary me-3",
+                    cancelButton: "btn btn-label-secondary",
+                },
+                buttonsStyling: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post(route("admin.core.room-schedules.revert-transfer", id))
+                        .done((res) => {
+                            toastr.success(res.message || "Transfer status reverted.");
+                            tableRef.current?.ajax.reload(null, false);
+                        })
+                        .fail((xhr) => {
+                            toastr.error(xhr.responseJSON?.message || "Failed to revert transfer.");
+                        });
+                }
+            });
+        };
+
+        window.roomScheduleCRUD.executeTransfer = (details) => {
+            handleExecuteTransferModal(details, () => {
+                tableRef.current?.ajax.reload(null, false);
+                loadStats();
             });
         };
 
@@ -460,6 +561,125 @@ export default function RoomSchedule() {
                     });
             }
         });
+    };
+
+    const handleGridMarkToTransfer = (id, subjectCode, section) => {
+        Swal.fire({
+            title: "Mark as To Transfer",
+            text: `Mark ${subjectCode} / ${section} as "To Transfer"?`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, mark it",
+            cancelButtonText: "Cancel",
+            customClass: {
+                confirmButton: "btn btn-danger me-3",
+                cancelButton: "btn btn-label-secondary",
+            },
+            buttonsStyling: false,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post(route("admin.core.room-schedules.mark-to-transfer", id))
+                    .done((res) => {
+                        toastr.success(res.message || "Schedule marked as To Transfer.");
+                        loadGridSchedules();
+                    })
+                    .fail((xhr) => {
+                        toastr.error(xhr.responseJSON?.message || "Failed to mark schedule.");
+                    });
+            }
+        });
+    };
+
+    const handleGridRevertTransfer = (id, subjectCode, section) => {
+        Swal.fire({
+            title: "Revert Transfer Status",
+            text: `Revert "To Transfer" status for ${subjectCode} / ${section}?`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes, revert",
+            cancelButtonText: "Cancel",
+            customClass: {
+                confirmButton: "btn btn-primary me-3",
+                cancelButton: "btn btn-label-secondary",
+            },
+            buttonsStyling: false,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post(route("admin.core.room-schedules.revert-transfer", id))
+                    .done((res) => {
+                        toastr.success(res.message || "Transfer status reverted.");
+                        loadGridSchedules();
+                    })
+                    .fail((xhr) => {
+                        toastr.error(xhr.responseJSON?.message || "Failed to revert transfer.");
+                    });
+            }
+        });
+    };
+
+    const handleGridExecuteTransfer = (id, subjectCode, section) => {
+        const schedule = gridSchedules.find((s) => String(s.id) === String(id));
+        const details = {
+            id,
+            subjectCode,
+            subjectName: schedule?.subject_name || "",
+            section,
+            roomCode: gridRoom?.code || "",
+            dayOfWeek: schedule?.day_of_week || "",
+            startTime: schedule?.start_time || "",
+            endTime: schedule?.end_time || "",
+        };
+        handleExecuteTransferModal(details, () => {
+            loadGridSchedules();
+        });
+    };
+
+    const handleExecuteTransferModal = (details, onSuccess) => {
+        setTransferModal({ open: true, ...details, onSuccess });
+        setTransferRoomId("");
+        setTransferRemarks("");
+        setTransferErrors({});
+        setTransferSubmitting(false);
+
+        // Show Bootstrap modal
+        setTimeout(() => {
+            $("#transferScheduleModal").modal("show");
+        }, 50);
+    };
+
+    const handleTransferSubmit = (e) => {
+        e.preventDefault();
+
+        const errs = {};
+        if (!transferRoomId) errs.room = "Please select a room.";
+        if (!transferRemarks.trim()) errs.remarks = "Please provide a reason for the transfer.";
+
+        if (Object.keys(errs).length > 0) {
+            setTransferErrors(errs);
+            return;
+        }
+
+        setTransferSubmitting(true);
+
+        $.ajax({
+            url: route("admin.core.room-schedules.execute-transfer", transferModal.id),
+            type: "POST",
+            data: {
+                transferred_room_id: transferRoomId,
+                remarks: transferRemarks.trim(),
+            },
+        })
+            .done((res) => {
+                toastr.success(res.message || "Schedule transferred successfully.");
+                $("#transferScheduleModal").modal("hide");
+                transferModal.onSuccess?.();
+            })
+            .fail((xhr) => {
+                toastr.error(xhr.responseJSON?.message || "Failed to transfer schedule.");
+            })
+            .always(() => {
+                setTransferSubmitting(false);
+            });
     };
 
     const handleEmptyClick = ({ day, startTime, endTime, anchorRect }) => {
@@ -652,6 +872,9 @@ export default function RoomSchedule() {
                                 loading={gridLoading}
                                 onEdit={handleGridEdit}
                                 onDelete={handleGridDelete}
+                                onMarkToTransfer={handleGridMarkToTransfer}
+                                onRevertTransfer={handleGridRevertTransfer}
+                                onExecuteTransfer={handleGridExecuteTransfer}
                                 onEmptyClick={handleEmptyClick}
                                 ghostBlock={popoverData}
                                 isAdmin={true}
@@ -703,6 +926,90 @@ export default function RoomSchedule() {
                     dayOptions={dayOptions}
                     onApply={applyFilters}
                 />
+
+                {/* ── Transfer Schedule Modal ─────────────── */}
+                <ModalForm
+                    id="transferScheduleModal"
+                    title="Transfer Schedule"
+                    subtitle={transferModal.subjectCode ? (
+                        <>
+                            Transfer <strong>{transferModal.subjectCode} – {transferModal.subjectName}</strong> / <strong>{transferModal.section}</strong> to a new room.
+                            <br />
+                            <span className="text-muted">Current Room: <strong>{transferModal.roomCode}</strong></span>
+                            {transferModal.dayOfWeek && <><br /><span className="text-muted">Day: {dayLabels[transferModal.dayOfWeek] ?? transferModal.dayOfWeek}</span></>}
+                            {transferModal.startTime && <><br /><span className="text-muted">Time: {formatTime(transferModal.startTime)} – {formatTime(transferModal.endTime)}</span></>}
+                        </>
+                    ) : ""}
+                    formId="transfer-schedule-form"
+                    size="modal-md"
+                    onSubmit={handleTransferSubmit}
+                    footer={(
+                        <>
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary"
+                                data-bs-dismiss="modal"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-danger"
+                                disabled={transferSubmitting}
+                            >
+                                {transferSubmitting ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        Transferring...
+                                    </>
+                                ) : (
+                                    <>
+                                        <LuArrowRightLeft size={16} className="me-1" />
+                                        Transfer
+                                    </>
+                                )}
+                            </button>
+                        </>
+                    )}
+                >
+                    <SelectField
+                        id="transfer-room-select"
+                        label="New Room"
+                        name="transferred_room_id"
+                        placeholder="Select a room"
+                        value={transferRoomId}
+                        onChange={(v) => {
+                            setTransferRoomId(v);
+                            setTransferErrors((prev) => ({ ...prev, room: "" }));
+                        }}
+                        options={rooms}
+                        renderOption={(r) => r.code}
+                        dropdownParent="#transferScheduleModal"
+                        error={transferErrors.room}
+                        required
+                    />
+
+                    <div className="mb-3">
+                        <label className="form-label" htmlFor="transfer-remarks">
+                            Remarks <span className="text-danger"> *</span>
+                        </label>
+                        <textarea
+                            id="transfer-remarks"
+                            className="form-control"
+                            rows="3"
+                            placeholder="Reason for the transfer (required)"
+                            value={transferRemarks}
+                            onChange={(e) => {
+                                setTransferRemarks(e.target.value);
+                                setTransferErrors((prev) => ({ ...prev, remarks: "" }));
+                            }}
+                            style={transferErrors.remarks ? { borderColor: "#fc4225" } : {}}
+                        />
+                        {transferErrors.remarks && (
+                            <div className="invalid-feedback d-block">{transferErrors.remarks}</div>
+                        )}
+                    </div>
+                </ModalForm>
             </Base>
         </>
     );
